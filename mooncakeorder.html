@@ -550,23 +550,7 @@
               };
             });
             
-            try {
-                const res = await fetch(CHECKOUT_API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-                    },
-                    body: JSON.stringify({
-                        lineItems,
-                        customerEmail: email,
-                        customerName: name,
-                        customerPhone: phone,
-                        shipping: { address, city, state, zip }
-                    })
-                });
-
-                const data = await res.json();
+                          const data = await res.json();
                 if (res.ok && data.url) {
                     window.location.href = data.url; // Redirect to Stripe Checkout
                 } else {
@@ -632,3 +616,4 @@
     </script>
 </body>
 </html>
+
