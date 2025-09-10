@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Jeng Chi — Mooncake 2025 Pre-Order</title>
+    <title>Jeng Chi — Mooncake 2025 Order</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Places API for address autocomplete -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC9-isOWBcQIw6c5fjftCzv-J-nu_74oFQ&libraries=places&callback=initAutocomplete" async defer></script>
     <script>
         tailwind.config = {
             theme: {
@@ -19,11 +21,11 @@
                     colors: {
                         'jc-primary': '#2D3748', // Dark Slate Blue
                         'jc-secondary': '#4A5568', // Darker Gray
-                        'jc-gold': '#FBD38D', // Soft Gold
+                        'jc-gold': '#C0A06D', // Muted Gold
                         'jc-bg': '#F7FAFC', // Light background
                         'jc-card': '#FFFFFF', // White cards
                         'jc-border': '#E2E8F0', // Light Gray border
-                        'jc-accent': '#C0A06D', // Muted Gold
+                        'jc-accent': '#FBD38D', // Soft Gold
                     },
                     boxShadow: {
                         'jc': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
@@ -42,6 +44,7 @@
             background: #F7FAFC;
             color: #2D3748;
             margin: 0;
+            background-image: radial-gradient(at 50% 10%, #FFFFFF, #F7FAFC);
         }
         .jc-card {
             background: #FFFFFF;
@@ -50,6 +53,7 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             padding: 2.5rem;
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            background-image: linear-gradient(to bottom right, #FFFFFF, #F7FAFC);
         }
         .jc-card:hover {
             transform: translateY(-5px);
@@ -95,6 +99,7 @@
             padding: 0.75rem 1rem;
             border: 1px solid #E2E8F0;
             background: #FFFFFF;
+            color: #2D3748;
             width: 100%;
             transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
@@ -145,7 +150,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 100;
-            background: #fff;
+            background: #FFFFFF;
             padding: 2rem;
             border-radius: 1rem;
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
@@ -153,10 +158,15 @@
             display: none;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
+            border: 1px solid #E2E8F0;
         }
         #message-box.show {
             display: block;
             opacity: 1;
+        }
+        .input-group.disabled .form-input {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         @media (max-width: 720px) {
             .jc-card { padding: 1.5rem; }
@@ -169,17 +179,14 @@
 <body class="min-h-full">
     <!-- HEADER -->
     <header class="w-full pt-10 pb-6 flex flex-col items-center gap-2 bg-jc-bg">
-        <img src="https://raw.githubusercontent.com/pgonzalez2910/jengchi-product-images/main/jengchilogo.jpg" alt="Jeng Chi" class="h-24 w-auto logo-glow rounded-full border-4 border-jc-gold shadow-lg" />
-        <h1 class="text-5xl font-serif-head font-bold tracking-tight text-jc-primary mt-2">Mooncake 2025 Pre-Order</h1>
-        <p class="opacity-90 text-center px-4 max-w-3xl text-lg mt-2 font-light">A curated selection of handcrafted mooncakes for a truly professional experience. Reserve now and pay at pickup, or buy instantly with our secure checkout.</p>
+        <img src="https://raw.githubusercontent.com/pgonzalez2910/jengchi-product-images/main/jengchilogo.jpg" alt="Jeng Chi" class="h-auto w-auto logo-glow" style="max-height: 96px;" />
+        <h1 class="text-5xl font-serif-head font-bold tracking-tight text-jc-primary mt-2">Mooncake 2025 Order</h1>
         <nav class="flex gap-8 text-md mt-4 font-medium text-jc-secondary">
             <a href="#Canton Style" class="hover:underline hover:text-jc-primary transition-colors">Canton Style</a>
             <span>•</span>
             <a href="#Thousand Layers" class="hover:underline hover:text-jc-primary transition-colors">Thousand Layers</a>
             <span>•</span>
             <a href="#Northern Style" class="hover:underline hover:text-jc-primary transition-colors">Northern Style</a>
-            <span>•</span>
-            <a href="#Special Style" class="hover:underline hover:text-jc-primary transition-colors">Special Style</a>
         </nav>
     </header>
     <!-- MAIN CONTENT -->
@@ -201,11 +208,7 @@
                 </div>
                 <div class="flex items-center justify-between">
                     <span>Shipping</span>
-                    <span id="shippingCost" class="price text-lg text-jc-primary">$60.00</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span>Tax (8.25%)</span>
-                    <span id="taxAmount" class="price text-lg text-jc-primary">$0.00</span>
+                    <span id="shippingCost" class="price text-lg text-jc-primary">$0.00</span>
                 </div>
                 <div class="flex items-center justify-between text-xl font-bold mt-4">
                     <span>Order Total</span>
@@ -218,23 +221,28 @@
             
             <form id="checkoutForm" class="mt-8 grid gap-4 hidden">
                 <h4 class="text-2xl font-serif-head font-bold text-jc-primary mb-2">Shipping Information</h4>
+                
                 <input id="custName" class="form-input" placeholder="Full Name" required />
-                <input id="custEmail" type="email" class="form-input" placeholder="Email Address" required />
-                <input id="custPhone" class="form-input" placeholder="Phone Number" />
-                <input id="custAddress" class="form-input" placeholder="Shipping Address" required />
-                <input id="custCity" class="form-input" placeholder="City" required />
-                <div class="grid grid-cols-2 gap-4">
-                    <input id="custState" class="form-input" placeholder="State" required />
-                    <input id="custZip" class="form-input" placeholder="Zip Code" required />
+                
+                <div id="emailGroup" class="input-group">
+                    <input id="custEmail" type="email" class="form-input" placeholder="Email Address (e.g., example@jengchi.com)" required pattern="[^@\s]+@[^@\s]+\.[^@\s]+" />
                 </div>
-                <h4 class="text-2xl font-serif-head font-bold text-jc-primary mt-6 mb-2">Payment Details</h4>
-                <input id="ccNumber" class="form-input" placeholder="Card Number" required />
-                <div class="grid grid-cols-2 gap-4">
-                    <input id="ccExpiry" class="form-input" placeholder="MM/YY" required />
-                    <input id="ccCVC" class="form-input" placeholder="CVC" required />
+                
+                <div id="phoneGroup" class="input-group">
+                    <input id="custPhone" class="form-input" placeholder="Phone Number (e.g., (XXX)-XXX-XXXX)" required pattern="^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$" />
                 </div>
+
+                <div id="shippingGroup" class="input-group grid grid-cols-1 gap-4">
+                    <input id="custAddress" class="form-input" placeholder="Shipping Address" required />
+                    <input id="custCity" class="form-input" placeholder="City" required />
+                    <div class="grid grid-cols-2 gap-4">
+                        <input id="custState" class="form-input" placeholder="State" required />
+                        <input id="custZip" class="form-input" placeholder="Zip Code" required />
+                    </div>
+                </div>
+
                 <p class="text-xs text-center text-gray-500 mt-2">By clicking "Place Order," you agree to our terms and conditions. No actual payment will be processed.</p>
-                <button type="submit" id="btnPlaceOrder" class="btn mt-4 text-lg">Place Order</button>
+                <button type="submit" id="btnPlaceOrder" class="btn mt-4 text-lg">Pay Now</button>
             </form>
             <div id="status" class="mt-4 text-center text-sm opacity-90"></div>
         </aside>
@@ -256,7 +264,6 @@
 
     <!-- Google Maps API and Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC9-isOWBcQIw6c5fjftCzv-J-nu_74oFQ&libraries=places&callback=initAutocomplete" async defer></script>
     <script>
         // Custom message box to replace alert()
         function showMessage(text) {
@@ -277,15 +284,17 @@
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwbGR6d2xmdGt2ampudGdzcXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2MzE5NzAsImV4cCI6MjA2MjIwNzk3MH0.qnWbOQv2RLPsIyO-oRwQkAN2VhmmdhTBt46SweUsLbs";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        const SHIPPING_COST_CENTS = 6000;
-
+        // Use a new URL for the dedicated Stripe function
+        const CHECKOUT_API_URL = "https://kpldzwlftkvjjntgsqxx.supabase.co/functions/v1/checkout";
+        const SHIPPING_COST_CENTS = 0; // TEMPORARILY SET TO 0 FOR TESTING
+        
         const cart = new Map();
         let allProducts = [];
         const fmtUSD = cents => `$${(cents / 100).toFixed(2)}`;
 
         function addToCart(p, qty) {
             const parsedQty = parseInt(qty, 10);
-            if (parsedQty <= 0) {
+            if (isNaN(parsedQty) || parsedQty <= 0) {
               cart.delete(p.id);
             } else {
               const current = cart.get(p.id) || { product: p, qty: 0 };
@@ -299,12 +308,13 @@
             const list = document.getElementById('cartList');
             const subtotalEl = document.getElementById('cartSubtotal');
             const totalEl = document.getElementById('cartTotal');
-            const taxEl = document.getElementById('taxAmount');
+            const shippingCostEl = document.getElementById('shippingCost');
             const upsellSection = document.getElementById('upsellSection');
             const checkoutBtn = document.getElementById('btnProceedToCheckout');
 
             list.innerHTML = '';
             let subtotal = 0;
+            let totalMooncakes = 0;
             if (cart.size > 0) {
                 document.getElementById('orderSummary').classList.remove('hidden');
                 upsellSection.classList.remove('hidden');
@@ -315,25 +325,32 @@
 
             for (const [id, item] of cart) {
                 subtotal += item.product.price_cents * item.qty;
+                totalMooncakes += item.qty;
                 const row = document.createElement('div');
-                row.className = 'flex items-center justify-between gap-2 p-3 bg-slate-50 rounded-lg shadow-sm border border-jc-border';
+                row.className = 'flex items-center justify-between gap-2 p-3 bg-white rounded-lg shadow-sm border border-jc-border text-gray-800';
                 row.innerHTML = `
                     <div class="flex-1">
                         <div class="font-semibold text-sm">${item.product.name}</div>
-                        <div class="text-xs opacity-70">Quantity: ${item.qty}</div>
+                        <div class="text-xs opacity-70">${item.product.category} | Quantity: ${item.qty}</div>
                     </div>
                     <div class="font-bold text-sm text-jc-primary">${fmtUSD(item.product.price_cents * item.qty)}</div>
-                    <button class="btn-ghost px-2 py-1" aria-label="remove" title="Remove">×</button>
+                    <button class="btn-ghost px-2 py-1 text-gray-600" aria-label="remove" title="Remove">×</button>
                 `;
                 const btnRem = row.querySelector('button[aria-label="remove"]');
                 btnRem.onclick = () => { cart.delete(id); updateCartUI(); };
                 list.appendChild(row);
             }
 
-            const total = subtotal + SHIPPING_COST_CENTS;
+            // Calculate tiered shipping fee based on total mooncakes
+            let shipping = 0;
+            if (totalMooncakes > 0 && subtotal >= 50) { // Apply shipping only if there are mooncakes in the cart AND subtotal is at least 50 cents
+                shipping = Math.ceil(totalMooncakes / 8) * SHIPPING_COST_CENTS;
+            }
+            
+            const total = subtotal + shipping;
 
             subtotalEl.textContent = fmtUSD(subtotal);
-            taxEl.textContent = fmtUSD(0); // Explicitly setting tax to 0
+            shippingCostEl.textContent = fmtUSD(shipping);
             totalEl.textContent = fmtUSD(total);
             
             checkoutBtn.disabled = cart.size === 0;
@@ -353,18 +370,19 @@
             const selectedItems = Array.from(cart.values()).map(item => item.product.id);
             const upsellProducts = allProducts
                 .filter(p => !selectedItems.includes(p.id))
-                .sort((a, b) => (b.upsell_order || 0) - (a.upsell_order || 0))
+                .sort((a, b) => (b.upsell_order ?? 0) - (a.upsell_order ?? 0))
                 .slice(0, 3); // Get top 3 upsell items
 
             upsellProducts.forEach(p => {
                 const itemEl = document.createElement('div');
-                itemEl.className = 'flex items-center gap-4 bg-slate-50 p-3 rounded-lg border border-jc-border';
+                itemEl.className = 'flex items-center gap-4 bg-white p-3 rounded-lg border border-jc-border text-gray-800';
                 itemEl.innerHTML = `
                     <div class="flex-1">
                         <div class="font-semibold text-sm">${p.name}</div>
-                        <div class="text-sm price">${fmtUSD(p.price_cents)}</div>
+                        <div class="text-xs opacity-70 text-jc-secondary">${p.category}</div>
+                        <div class="text-sm price text-jc-primary">${fmtUSD(p.price_cents)}</div>
                     </div>
-                    <button class="btn-ghost text-sm py-1 px-3" aria-label="add">Add</button>
+                    <button class="btn-ghost text-sm py-1 px-3 text-gray-600" aria-label="add">Add</button>
                 `;
                 itemEl.querySelector('button').onclick = () => addToCart(p, 1);
                 upsellContainer.appendChild(itemEl);
@@ -402,24 +420,23 @@
                 productCard.className = 'flex flex-col items-center text-center p-4 border border-jc-border rounded-lg bg-white transition-shadow hover:shadow-lg hover:border-jc-accent';
                 productCard.innerHTML = `
                     <h4 class="font-semibold text-lg text-jc-primary">${p.name}</h4>
-                    <p class="text-xs opacity-70 mt-1">${p.description || ''}</p>
-                    <div class="font-bold price text-xl text-jc-primary mt-2 mb-4">${fmtUSD(p.price_cents)}</div>
+                    <p class="text-xs opacity-70 mt-1 text-jc-secondary">${p.description || ''}</p>
+                    <div class="font-bold price text-xl text-jc-gold mt-2 mb-4">${fmtUSD(p.price_cents)}</div>
                     <div class="flex items-center justify-center gap-2">
-                      <button class="btn-ghost py-1 px-3 text-lg font-bold" aria-label="minus">−</button>
-                      <input type="number" value="1" min="1" class="form-input w-20 text-center" aria-label="quantity" />
-                      <button class="btn-ghost py-1 px-3 text-lg font-bold" aria-label="plus">+</button>
+                      <button class="btn-ghost py-1 px-3 text-lg font-bold text-gray-600" aria-label="minus">−</button>
+                      <input type="number" value="" min="0" class="form-input w-20 text-center bg-gray-100 text-gray-800" aria-label="quantity" />
+                      <button class="btn-ghost py-1 px-3 text-lg font-bold text-gray-600" aria-label="plus">+</button>
                     </div>
-                    <button class="btn w-full mt-4" aria-label="add">Add to Cart</button>
                 `;
                 const qtyInput = productCard.querySelector('input[type="number"]');
+                qtyInput.addEventListener('input', () => addToCart(p, qtyInput.value));
                 productCard.querySelector('button[aria-label="minus"]').onclick = () => { 
-                    qtyInput.value = Math.max(1, parseInt(qtyInput.value, 10) - 1); 
+                    qtyInput.value = Math.max(0, parseInt(qtyInput.value || '0', 10) - 1); 
+                    addToCart(p, qtyInput.value);
                 };
                 productCard.querySelector('button[aria-label="plus"]').onclick = () => { 
-                    qtyInput.value = parseInt(qtyInput.value, 10) + 1; 
-                };
-                productCard.querySelector('button[aria-label="add"]').onclick = () => { 
-                    addToCart(p, qtyInput.value); 
+                    qtyInput.value = (parseInt(qtyInput.value || '0', 10) + 1); 
+                    addToCart(p, qtyInput.value);
                 };
                 rows.appendChild(productCard);
             }
@@ -434,20 +451,10 @@
                 const cat = p.category || 'Uncategorized';
                 (groups[cat] ||= []).push(p);
             }
-            const order = ['Canton Style', 'Thousand Layers', 'Northern Style', 'Special Style'];
-            const cats = Object.keys(groups).sort((a, b) => {
-                const ia = order.indexOf(a), ib = order.indexOf(b);
-                if (ia !== -1 && ib !== -1) return ia - ib;
-                if (ia !== -1) return -1;
-                if (ib !== -1) return 1;
-                return a.localeCompare(b);
-            });
-            for (const cat of cats) {
-                groups[cat].sort((a, b) => {
-                    const so = (a.sort_order ?? 1e9) - (b.sort_order ?? 1e9);
-                    if (so !== 0) return so;
-                    return a.name.localeCompare(b.name);
-                });
+            const cats = Object.keys(groups).sort(); // Sort categories alphabetically
+            const filteredCats = cats.filter(cat => cat !== 'Special Style');
+            for (const cat of filteredCats) {
+                groups[cat].sort((a, b) => a.name.localeCompare(b.name));
                 root.appendChild(renderSection(cat, groups[cat]));
             }
         }
@@ -458,8 +465,7 @@
                 .select('*')
                 .eq('is_active', true)
                 .order('category', { ascending: true, nullsFirst: true })
-                .order('sort_order', { ascending: true, nullsFirst: true })
-                .order('name', { ascending: true });
+                .order('name', { ascending: true }); // Sort alphabetically by name
             if (error) {
                 console.error(error);
                 document.getElementById('groupedRoot').innerHTML =
@@ -482,6 +488,8 @@
 
         document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const status = document.getElementById('status');
+            
             const name = document.getElementById('custName').value.trim();
             const email = document.getElementById('custEmail').value.trim();
             const phone = document.getElementById('custPhone').value.trim();
@@ -489,41 +497,109 @@
             const city = document.getElementById('custCity').value.trim();
             const state = document.getElementById('custState').value.trim();
             const zip = document.getElementById('custZip').value.trim();
-            const status = document.getElementById('status');
             
+            if (!name) {
+                showMessage('Please enter your full name.');
+                return;
+            }
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showMessage('Please enter a valid email address.');
+                return;
+            }
+            if (!phone || !/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/.test(phone)) {
+                showMessage('Please enter a valid phone number.');
+                return;
+            }
+            if (!address) {
+                showMessage('Please enter your shipping address.');
+                return;
+            }
+            if (!city) {
+                showMessage('Please enter your city.');
+                return;
+            }
+            if (!state) {
+                showMessage('Please enter your state.');
+                return;
+            }
+            if (!zip || !/^\d{5}(-\d{4})?$/.test(zip)) {
+                showMessage('Please enter a valid zip code.');
+                return;
+            }
+
             status.textContent = 'Processing order...';
             
-            const { data: preorder, error: e1 } = await supabaseClient
-                .from('mooncake_preorders')
-                .insert([{ customer_name: name, email, phone, notes: `Simulated checkout. Shipping: ${address}, ${city}, ${state} ${zip}` }])
-                .select()
-                .single();
-            if(e1){
-                status.textContent = 'Error: ' + e1.message;
-                return;
-            }
-            const items = Array.from(cart.values()).map(i => ({
-                preorder_id: preorder.id,
-                product_id: i.product.id,
-                quantity: i.qty
-            }));
-            const { error: e2 } = await supabaseClient.from('mooncake_preorder_items').insert(items);
-            if(e2){
-                status.textContent = 'Error: ' + e2.message;
-                return;
-            }
+            const lineItems = Array.from(cart.values()).map(item => {
+              const productData = {
+                name: item.product.name,
+                metadata: { product_id: item.product.id }
+              };
+
+              // ✅ Only add description if non-empty
+              if (item.product.description && item.product.description.trim() !== "") {
+                productData.description = item.product.description;
+              }
+
+              return {
+                price_data: {
+                  currency: "usd",
+                  unit_amount: item.product.price_cents,
+                  product_data: productData
+                },
+                quantity: item.qty
+              };
+            });
             
-            cart.clear();
-            updateCartUI();
-            
-            // Hide checkout form and show success message
-            document.getElementById('checkoutForm').classList.add('hidden');
-            document.getElementById('btnProceedToCheckout').classList.remove('hidden');
-            status.innerHTML = `✅ Order placed successfully! Reference: <strong>${preorder.id}</strong>. A confirmation email has been sent.`;
+            try {
+                const res = await fetch(CHECKOUT_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        lineItems,
+                        customerEmail: email,
+                        customerName: name,
+                        customerPhone: phone,
+                        shipping: { address, city, state, zip }
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.url) {
+                    window.location.href = data.url; // Redirect to Stripe Checkout
+                } else {
+                    console.error("Checkout error:", data);
+                    showMessage("Error: " + (data.error || "Failed to create checkout session."));
+                }
+            } catch (err) {
+                console.error("Checkout error:", err);
+                showMessage("An unexpected error occurred during checkout.");
+            }
         });
 
         document.getElementById('y').textContent = new Date().getFullYear();
         loadProducts();
+
+        
+        function formatPhoneNumber(event) {
+            const input = event.target;
+            const value = input.value.replace(/\D/g, '');
+            let formattedValue = '';
+            if (value.length > 0) {
+                formattedValue += `(${value.substring(0, 3)}`;
+            }
+            if (value.length >= 4) {
+                formattedValue += `)-${value.substring(3, 6)}`;
+            }
+            if (value.length >= 7) {
+                formattedValue += `-${value.substring(6, 10)}`;
+            }
+            input.value = formattedValue;
+        }
+
+        document.getElementById('custPhone').addEventListener('input', formatPhoneNumber);
 
         // Google Places Autocomplete
         function initAutocomplete() {
@@ -533,14 +609,11 @@
                 fields: ['address_components', 'geometry'],
                 types: ['address']
             });
-
             autocomplete.addListener('place_changed', () => {
                 const place = autocomplete.getPlace();
                 if (!place.address_components) return;
-
                 const components = place.address_components;
                 let city = '', state = '', zip = '';
-
                 for (const component of components) {
                     const type = component.types[0];
                     if (type === 'locality') {
