@@ -264,371 +264,317 @@
 
     <!-- Google Maps API and Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-    // Custom message box to replace alert()
-    function showMessage(text) {
-        const msgBox = document.getElementById('message-box');
-        const msgText = document.getElementById('message-text');
-        const closeBtn = document.getElementById('message-close-btn');
-        
-        msgText.textContent = text;
-        msgBox.classList.add('show');
-        
-        closeBtn.onclick = () => {
-            msgBox.classList.remove('show');
-        };
-    }
-
-    // ===== Supabase setup =====
-    const SUPABASE_URL = "https://kpldzwlftkvjjntgsqxx.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwbGR6d2xmdGt2ampudGdzcXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2MzE5NzAsImV4cCI6MjA2MjIwNzk3MH0.qnWbOQv2RLPsIyO-oRwQkAN2VhmmdhTBt46SweUsLbs";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    const CHECKOUT_API_URL = "https://kpldzwlftkvjjntgsqxx.supabase.co/functions/v1/checkout";
-    const SHIPPING_COST_CENTS = 0; // TEMPORARILY SET TO 0 FOR TESTING
-    
-    const cart = new Map();
-    let allProducts = [];
-    const fmtUSD = cents => `$${(cents / 100).toFixed(2)}`;
-
-    function addToCart(p, qty) {
-        const parsedQty = parseInt(qty, 10);
-        if (isNaN(parsedQty) || parsedQty <= 0) {
-            cart.delete(p.id);
-        } else {
-            const current = cart.get(p.id) || { product: p, qty: 0 };
-            current.qty = parsedQty;
-            cart.set(p.id, current);
-        }
-        updateCartUI();
-    }
-
-    function updateCartUI() {
-        const list = document.getElementById('cartList');
-        const subtotalEl = document.getElementById('cartSubtotal');
-        const totalEl = document.getElementById('cartTotal');
-        const shippingCostEl = document.getElementById('shippingCost');
-        const upsellSection = document.getElementById('upsellSection');
-        const checkoutBtn = document.getElementById('btnProceedToCheckout');
-
-        list.innerHTML = '';
-        let subtotal = 0;
-        let totalMooncakes = 0;
-        if (cart.size > 0) {
-            document.getElementById('orderSummary').classList.remove('hidden');
-            upsellSection.classList.remove('hidden');
-        } else {
-            document.getElementById('orderSummary').classList.add('hidden');
-            upsellSection.classList.add('hidden');
-        }
-
-        for (const [id, item] of cart) {
-            subtotal += item.product.price_cents * item.qty;
-            totalMooncakes += item.qty;
-            const row = document.createElement('div');
-            row.className = 'flex items-center justify-between gap-2 p-3 bg-white rounded-lg shadow-sm border border-jc-border text-gray-800';
-            row.innerHTML = `
-                <div class="flex-1">
-                    <div class="font-semibold text-sm">${item.product.name}</div>
-                    <div class="text-xs opacity-70">${item.product.category} | Quantity: ${item.qty}</div>
-                </div>
-                <div class="font-bold text-sm text-jc-primary">${fmtUSD(item.product.price_cents * item.qty)}</div>
-                <button class="btn-ghost px-2 py-1 text-gray-600" aria-label="remove" title="Remove">×</button>
-            `;
-            const btnRem = row.querySelector('button[aria-label="remove"]');
-            btnRem.onclick = () => { cart.delete(id); updateCartUI(); };
-            list.appendChild(row);
-        }
-
-        let shipping = 0;
-        if (totalMooncakes > 0 && subtotal >= 50) {
-            shipping = Math.ceil(totalMooncakes / 8) * SHIPPING_COST_CENTS;
-        }
-        
-        const total = subtotal + shipping;
-
-        subtotalEl.textContent = fmtUSD(subtotal);
-        shippingCostEl.textContent = fmtUSD(shipping);
-        totalEl.textContent = fmtUSD(total);
-        
-        checkoutBtn.disabled = cart.size === 0;
-        if (cart.size > 0) {
-            checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        } else {
-            checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        }
-        
-        updateUpsellItems();
-    }
-
-    function updateUpsellItems() {
-        const upsellContainer = document.getElementById('upsellItems');
-        upsellContainer.innerHTML = '';
-        
-        const selectedItems = Array.from(cart.values()).map(item => item.product.id);
-        const upsellProducts = allProducts
-            .filter(p => !selectedItems.includes(p.id))
-            .sort((a, b) => (b.upsell_order ?? 0) - (a.upsell_order ?? 0))
-            .slice(0, 3);
-
-        upsellProducts.forEach(p => {
-            const itemEl = document.createElement('div');
-            itemEl.className = 'flex items-center gap-4 bg-white p-3 rounded-lg border border-jc-border text-gray-800';
-            itemEl.innerHTML = `
-                <div class="flex-1">
-                    <div class="font-semibold text-sm">${p.name}</div>
-                    <div class="text-xs opacity-70 text-jc-secondary">${p.category}</div>
-                    <div class="text-sm price text-jc-primary">${fmtUSD(p.price_cents)}</div>
-                </div>
-                <button class="btn-ghost text-sm py-1 px-3 text-gray-600" aria-label="add">Add</button>
-            `;
-            itemEl.querySelector('button').onclick = () => addToCart(p, 1);
-            upsellContainer.appendChild(itemEl);
-        });
-    }
-
-    function sectionBanner(category) {
-        if (category === 'Canton Style') return 'https://raw.githubusercontent.com/pgonzalez2910/jengchi-product-images/main/cantonese.jpg';
-        if (category === 'Northern Style') return 'https://raw.githubusercontent.com/pgonzalez2910/jengchi-product-images/main/nothern.jpg';
-        if (category === 'Thousand Layers') return 'https://raw.githubusercontent.com/pgonzalez2910/jengchi-product-images/main/thousand.jpg';
-        return 'https://raw.githubusercontent.com/pgonzalez2910/jengchi-product-images/main/special.jpg';
-    }
-
-    function renderSection(category, products) {
-        const wrap = document.createElement('section');
-        wrap.className = 'jc-card p-0 overflow-hidden';
-        let banner = sectionBanner(category);
-        let headerHTML = `
-            <div class="jc-section-banner">
-                <img src="${banner}" alt="${category}">
-                <div class="jc-h2">${category}</div>
-            </div>`;
-        wrap.innerHTML = `
-            <a id="${category}">${headerHTML}</a>
-            <div class="p-6 md:p-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-rows></div>
-            </div>
-        `;
-        const rows = wrap.querySelector('[data-rows]');
-        for (const p of products) {
-            const productCard = document.createElement('div');
-            productCard.className = 'flex flex-col items-center text-center p-4 border border-jc-border rounded-lg bg-white transition-shadow hover:shadow-lg hover:border-jc-accent';
-            productCard.innerHTML = `
-                <h4 class="font-semibold text-lg text-jc-primary">${p.name}</h4>
-                <p class="text-xs opacity-70 mt-1 text-jc-secondary">${p.description || ''}</p>
-                <div class="font-bold price text-xl text-jc-gold mt-2 mb-4">${fmtUSD(p.price_cents)}</div>
-                <div class="flex items-center justify-center gap-2">
-                  <button class="btn-ghost py-1 px-3 text-lg font-bold text-gray-600" aria-label="minus">−</button>
-                  <input type="number" value="" min="0" class="form-input w-20 text-center bg-gray-100 text-gray-800" aria-label="quantity" />
-                  <button class="btn-ghost py-1 px-3 text-lg font-bold text-gray-600" aria-label="plus">+</button>
-                </div>
-            `;
-            const qtyInput = productCard.querySelector('input[type="number"]');
-            qtyInput.addEventListener('input', () => addToCart(p, qtyInput.value));
-            productCard.querySelector('button[aria-label="minus"]').onclick = () => { 
-                qtyInput.value = Math.max(0, parseInt(qtyInput.value || '0', 10) - 1); 
-                addToCart(p, qtyInput.value);
+    <script>
+        // Custom message box to replace alert()
+        function showMessage(text) {
+            const msgBox = document.getElementById('message-box');
+            const msgText = document.getElementById('message-text');
+            const closeBtn = document.getElementById('message-close-btn');
+            
+            msgText.textContent = text;
+            msgBox.classList.add('show');
+            
+            closeBtn.onclick = () => {
+                msgBox.classList.remove('show');
             };
-            productCard.querySelector('button[aria-label="plus"]').onclick = () => { 
-                qtyInput.value = (parseInt(qtyInput.value || '0', 10) + 1); 
-                addToCart(p, qtyInput.value);
-            };
-            rows.appendChild(productCard);
         }
-        return wrap;
-    }
 
-    function renderGrouped(products) {
-        const root = document.getElementById('groupedRoot');
-        root.innerHTML = '';
-        const groups = {};
-        for (const p of products) {
-            const cat = p.category || 'Uncategorized';
-            (groups[cat] ||= []).push(p);
-        }
-        const cats = Object.keys(groups).sort();
-        const filteredCats = cats.filter(cat => cat !== 'Special Style');
-        for (const cat of filteredCats) {
-            groups[cat].sort((a, b) => a.name.localeCompare(b.name));
-            root.appendChild(renderSection(cat, groups[cat]));
-        }
-    }
-
-    async function loadProducts() {
-        const { data, error } = await supabaseClient
-            .from('mooncake_products')
-            .select('*')
-            .eq('is_active', true)
-            .order('category', { ascending: true, nullsFirst: true })
-            .order('name', { ascending: true });
-        if (error) {
-            console.error(error);
-            document.getElementById('groupedRoot').innerHTML =
-                `<div class="jc-card p-6 text-center text-sm">Error loading products: ${error.message}</div>`;
-            return;
-        }
-        allProducts = data || [];
-        renderGrouped(allProducts);
-        updateCartUI();
-    }
-
-    document.getElementById('btnProceedToCheckout').addEventListener('click', () => {
-        if (cart.size === 0) {
-            showMessage('Your cart is empty. Please add items to proceed.');
-            return;
-        }
-        document.getElementById('checkoutForm').classList.remove('hidden');
-        document.getElementById('btnProceedToCheckout').classList.add('hidden');
-    });
-
-    document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const status = document.getElementById('status');
+        // ===== Supabase setup =====
+        const SUPABASE_URL = "https://kpldzwlftkvjjntgsqxx.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwbGR6d2xmdGt2ampudGdzcXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2MzE5NzAsImV4cCI6MjA2MjIwNzk3MH0.qnWbOQv2RLPsIyO-oRwQkAN2VhmmdhTBt46SweUsLbs";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        const name = document.getElementById('custName').value.trim();
-        const email = document.getElementById('custEmail').value.trim();
-        const phone = document.getElementById('custPhone').value.trim().replace(/[^\d]/g, ''); // Clean non-digits
-        const address = document.getElementById('custAddress').value.trim();
-        const city = document.getElementById('custCity').value.trim();
-        const state = document.getElementById('custState').value.trim();
-        const zip = document.getElementById('custZip').value.trim();
+        // Use a new URL for the dedicated Stripe function
+        const CHECKOUT_API_URL = "https://kpldzwlftkvjjntgsqxx.supabase.co/functions/v1/checkout";
+        const SHIPPING_COST_CENTS = 0; // TEMPORARILY SET TO 0 FOR TESTING
         
-        if (!name) {
-            showMessage('Please enter your full name.');
-            return;
-        }
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            showMessage('Please enter a valid email address.');
-            return;
-        }
-        if (!phone || !/^\d{10}$/.test(phone)) { // Corrected to validate 10 digits
-            showMessage('Please enter a valid 10-digit phone number.');
-            return;
-        }
-        if (!address) {
-            showMessage('Please enter your shipping address.');
-            return;
-        }
-        if (!city) {
-            showMessage('Please enter your city.');
-            return;
-        }
-        if (!state) {
-            showMessage('Please enter your state.');
-            return;
-        }
-        if (!zip || !/^\d{5}$/.test(zip)) {
-            showMessage('Please enter a valid 5-digit zip code.');
-            return;
-        }
+        const cart = new Map();
+        let allProducts = [];
+        const fmtUSD = cents => `$${(cents / 100).toFixed(2)}`;
 
-        status.textContent = 'Processing order...';
-        
-        const lineItems = Array.from(cart.values()).map(item => ({
-            price_data: {
-                currency: "usd",
-                unit_amount: item.product.price_cents,
-                product_data: {
-                    name: item.product.name,
-                    metadata: { product_id: item.product.id },
-                    ...(item.product.description && item.product.description.trim() !== "" && { description: item.product.description })
-                }
-            },
-            quantity: item.qty
-        }));
-        
-        const shipping = { address, city, state, zip, flat_fee: SHIPPING_COST_CENTS };
-        const subtotalCents = lineItems.reduce((sum, i) => sum + i.price_data.unit_amount * i.quantity, 0);
-        const shippingCostCents = shipping.flat_fee * 100;
-        const totalCents = subtotalCents + shippingCostCents;
-
-        try {
-            const res = await fetch(CHECKOUT_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lineItems, customerEmail: email, customerName: name, customerPhone: phone, shipping })
-            });
-            const data = await res.json();
-            if (res.ok && data.url) {
-                window.location.href = data.url; // Redirect to Stripe Checkout
+        function addToCart(p, qty) {
+            const parsedQty = parseInt(qty, 10);
+            if (isNaN(parsedQty) || parsedQty <= 0) {
+              cart.delete(p.id);
             } else {
-                console.error("Checkout error:", data);
-                showMessage("Error: " + (data.error || "Failed to create checkout session."));
+              const current = cart.get(p.id) || { product: p, qty: 0 };
+              current.qty = parsedQty;
+              cart.set(p.id, current);
             }
-        } catch (err) {
-            console.error("Checkout error:", err);
-            showMessage("An unexpected error occurred during checkout.");
-        }
-    });
-
-    document.getElementById('custPhone').addEventListener('input', function(e) {
-        let value = e.target.value.replace(/[^\d]/g, '');
-        if (value.length > 10) value = value.slice(0, 10);
-        let formatted = '';
-        if (value.length > 0) formatted += '(' + value.substring(0, 3);
-        if (value.length > 3) formatted += ')-' + value.substring(3, 6);
-        if (value.length > 6) formatted += '-' + value.substring(6, 10);
-        e.target.value = formatted;
-    });
-
-    // Google Places Autocomplete
-    function initAutocomplete() {
-        const addressInput = document.getElementById('custAddress');
-        const autocomplete = new google.maps.places.Autocomplete(addressInput, {
-            componentRestrictions: { 'country': ['us'] },
-            fields: ['address_components', 'geometry'],
-            types: ['address']
-        });
-        autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace();
-            if (!place.address_components) return;
-            const components = place.address_components;
-            let city = '', state = '', zip = '';
-            for (const component of components) {
-                const type = component.types[0];
-                if (type === 'locality') city = component.long_name;
-                else if (type === 'administrative_area_level_1') state = component.short_name;
-                else if (type === 'postal_code') zip = component.long_name;
-            }
-            document.getElementById('custCity').value = city;
-            document.getElementById('custState').value = state;
-            document.getElementById('custZip').value = zip;
-        });
-    }
-    window.onload = initAutocomplete; // Ensure autocomplete initializes after page load
-
-    document.getElementById('y').textContent = new Date().getFullYear();
-    loadProducts();
-</script>
-
-
-
-
-
-
-
-
-
-    
-        
-        function formatPhoneNumber(event) {
-            const input = event.target;
-            const value = input.value.replace(/\D/g, '');
-            let formattedValue = '';
-            if (value.length > 0) {
-                formattedValue += `(${value.substring(0, 3)}`;
-            }
-            if (value.length >= 4) {
-                formattedValue += `)-${value.substring(3, 6)}`;
-            }
-            if (value.length >= 7) {
-                formattedValue += `-${value.substring(6, 10)}`;
-            }
-            input.value = formattedValue;
+            updateCartUI();
         }
 
-        document.getElementById('custPhone').addEventListener('input', formatPhoneNumber);
+        function updateCartUI() {
+            const list = document.getElementById('cartList');
+            const subtotalEl = document.getElementById('cartSubtotal');
+            const totalEl = document.getElementById('cartTotal');
+            const shippingCostEl = document.getElementById('shippingCost');
+            const upsellSection = document.getElementById('upsellSection');
+            const checkoutBtn = document.getElementById('btnProceedToCheckout');
+
+            list.innerHTML = '';
+            let subtotal = 0;
+            let totalMooncakes = 0;
+            if (cart.size > 0) {
+                document.getElementById('orderSummary').classList.remove('hidden');
+                upsellSection.classList.remove('hidden');
+            } else {
+                document.getElementById('orderSummary').classList.add('hidden');
+                upsellSection.classList.add('hidden');
+            }
+
+            for (const [id, item] of cart) {
+                subtotal += item.product.price_cents * item.qty;
+                totalMooncakes += item.qty;
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between gap-2 p-3 bg-white rounded-lg shadow-sm border border-jc-border text-gray-800';
+                row.innerHTML = `
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm">${item.product.name}</div>
+                        <div class="text-xs opacity-70">${item.product.category} | Quantity: ${item.qty}</div>
+                    </div>
+                    <div class="font-bold text-sm text-jc-primary">${fmtUSD(item.product.price_cents * item.qty)}</div>
+                    <button class="btn-ghost px-2 py-1 text-gray-600" aria-label="remove" title="Remove">×</button>
+                `;
+                const btnRem = row.querySelector('button[aria-label="remove"]');
+                btnRem.onclick = () => { cart.delete(id); updateCartUI(); };
+                list.appendChild(row);
+            }
+
+            // Calculate tiered shipping fee based on total mooncakes
+            let shipping = 0;
+            if (totalMooncakes > 0 && subtotal >= 50) { // Apply shipping only if there are mooncakes in the cart AND subtotal is at least 50 cents
+                shipping = Math.ceil(totalMooncakes / 8) * SHIPPING_COST_CENTS;
+            }
+            
+            const total = subtotal + shipping;
+
+            subtotalEl.textContent = fmtUSD(subtotal);
+            shippingCostEl.textContent = fmtUSD(shipping);
+            totalEl.textContent = fmtUSD(total);
+            
+            checkoutBtn.disabled = cart.size === 0;
+            if (cart.size > 0) {
+              checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+              checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            
+            updateUpsellItems();
+        }
+
+        function updateUpsellItems() {
+            const upsellContainer = document.getElementById('upsellItems');
+            upsellContainer.innerHTML = '';
+            
+            const selectedItems = Array.from(cart.values()).map(item => item.product.id);
+            const upsellProducts = allProducts
+                .filter(p => !selectedItems.includes(p.id))
+                .sort((a, b) => (b.upsell_order ?? 0) - (a.upsell_order ?? 0))
+                .slice(0, 3); // Get top 3 upsell items
+
+            upsellProducts.forEach(p => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'flex items-center gap-4 bg-white p-3 rounded-lg border border-jc-border text-gray-800';
+                itemEl.innerHTML = `
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm">${p.name}</div>
+                        <div class="text-xs opacity-70 text-jc-secondary">${p.category}</div>
+                        <div class="text-sm price text-jc-primary">${fmtUSD(p.price_cents)}</div>
+                    </div>
+                    <button class="btn-ghost text-sm py-1 px-3 text-gray-600" aria-label="add">Add</button>
+                `;
+                itemEl.querySelector('button').onclick = () => addToCart(p, 1);
+                upsellContainer.appendChild(itemEl);
+            });
+        }
+
+        function sectionBanner(category) {
+            if (category === 'Canton Style')
+                return 'https://raw.githubusercontent.com/pgonzalez2910/jengchi-product-images/main/cantonese.jpg';
+            if (category === 'Northern Style')
+                return 'https://raw.githubusercontent.com/pgonzalez2910/jengchi-product-images/main/nothern.jpg';
+            if (category === 'Thousand Layers')
+                return 'https://raw.githubusercontent.com/pgonzalez2910/jengchi-product-images/main/thousand.jpg';
+            return 'https://raw.githubusercontent.com/pgonzalez2910/jengchi-product-images/main/special.jpg';
+        }
+
+        function renderSection(category, products) {
+            const wrap = document.createElement('section');
+            wrap.className = 'jc-card p-0 overflow-hidden';
+            let banner = sectionBanner(category);
+            let headerHTML = `
+                <div class="jc-section-banner">
+                    <img src="${banner}" alt="${category}">
+                    <div class="jc-h2">${category}</div>
+                </div>`;
+            wrap.innerHTML = `
+                <a id="${category}">${headerHTML}</a>
+                <div class="p-6 md:p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-rows></div>
+                </div>
+            `;
+            const rows = wrap.querySelector('[data-rows]');
+            for (const p of products) {
+                const productCard = document.createElement('div');
+                productCard.className = 'flex flex-col items-center text-center p-4 border border-jc-border rounded-lg bg-white transition-shadow hover:shadow-lg hover:border-jc-accent';
+                productCard.innerHTML = `
+                    <h4 class="font-semibold text-lg text-jc-primary">${p.name}</h4>
+                    <p class="text-xs opacity-70 mt-1 text-jc-secondary">${p.description || ''}</p>
+                    <div class="font-bold price text-xl text-jc-gold mt-2 mb-4">${fmtUSD(p.price_cents)}</div>
+                    <div class="flex items-center justify-center gap-2">
+                      <button class="btn-ghost py-1 px-3 text-lg font-bold text-gray-600" aria-label="minus">−</button>
+                      <input type="number" value="" min="0" class="form-input w-20 text-center bg-gray-100 text-gray-800" aria-label="quantity" />
+                      <button class="btn-ghost py-1 px-3 text-lg font-bold text-gray-600" aria-label="plus">+</button>
+                    </div>
+                `;
+                const qtyInput = productCard.querySelector('input[type="number"]');
+                qtyInput.addEventListener('input', () => addToCart(p, qtyInput.value));
+                productCard.querySelector('button[aria-label="minus"]').onclick = () => { 
+                    qtyInput.value = Math.max(0, parseInt(qtyInput.value || '0', 10) - 1); 
+                    addToCart(p, qtyInput.value);
+                };
+                productCard.querySelector('button[aria-label="plus"]').onclick = () => { 
+                    qtyInput.value = (parseInt(qtyInput.value || '0', 10) + 1); 
+                    addToCart(p, qtyInput.value);
+                };
+                rows.appendChild(productCard);
+            }
+            return wrap;
+        }
+
+        function renderGrouped(products) {
+            const root = document.getElementById('groupedRoot');
+            root.innerHTML = '';
+            const groups = {};
+            for (const p of products) {
+                const cat = p.category || 'Uncategorized';
+                (groups[cat] ||= []).push(p);
+            }
+            const cats = Object.keys(groups).sort(); // Sort categories alphabetically
+            const filteredCats = cats.filter(cat => cat !== 'Special Style');
+            for (const cat of filteredCats) {
+                groups[cat].sort((a, b) => a.name.localeCompare(b.name));
+                root.appendChild(renderSection(cat, groups[cat]));
+            }
+        }
+
+        async function loadProducts() {
+            const { data, error } = await supabaseClient
+                .from('mooncake_products')
+                .select('*')
+                .eq('is_active', true)
+                .order('category', { ascending: true, nullsFirst: true })
+                .order('name', { ascending: true }); // Sort alphabetically by name
+            if (error) {
+                console.error(error);
+                document.getElementById('groupedRoot').innerHTML =
+                    `<div class="jc-card p-6 text-center text-sm">Error loading products: ${error.message}</div>`;
+                return;
+            }
+            allProducts = data || [];
+            renderGrouped(allProducts);
+            updateCartUI(); // Initial cart UI update
+        }
+
+        document.getElementById('btnProceedToCheckout').addEventListener('click', () => {
+            if (cart.size === 0) {
+                showMessage('Your cart is empty. Please add items to proceed.');
+                return;
+            }
+            document.getElementById('checkoutForm').classList.remove('hidden');
+            document.getElementById('btnProceedToCheckout').classList.add('hidden');
+        });
+
+        document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const status = document.getElementById('status');
+            
+            const name = document.getElementById('custName').value.trim();
+            const email = document.getElementById('custEmail').value.trim();
+            const phone = document.getElementById('custPhone').value.trim().replace(/[^\d]/g, ''); // Clean non-digits
+            const address = document.getElementById('custAddress').value.trim();
+            const city = document.getElementById('custCity').value.trim();
+            const state = document.getElementById('custState').value.trim();
+            const zip = document.getElementById('custZip').value.trim();
+            
+            if (!name) {
+                showMessage('Please enter your full name.');
+                return;
+            }
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showMessage('Please enter a valid email address.');
+                return;
+            }
+            if (!phone || !/^\d{10}$/.test(phone)) { // Corrected to validate 10 digits
+                showMessage('Please enter a valid 10-digit phone number.');
+                return;
+            }
+            if (!address) {
+                showMessage('Please enter your shipping address.');
+                return;
+            }
+            if (!city) {
+                showMessage('Please enter your city.');
+                return;
+            }
+            if (!state) {
+                showMessage('Please enter your state.');
+                return;
+            }
+            if (!zip || !/^\d{5}$/.test(zip)) {
+                showMessage('Please enter a valid 5-digit zip code.');
+                return;
+            }
+
+            status.textContent = 'Processing order...';
+            
+            const lineItems = Array.from(cart.values()).map(item => ({
+                price_data: {
+                    currency: "usd",
+                    unit_amount: item.product.price_cents,
+                    product_data: {
+                        name: item.product.name,
+                        metadata: { product_id: item.product.id },
+                        ...(item.product.description && item.product.description.trim() !== "" && { description: item.product.description })
+                    }
+                },
+                quantity: item.qty
+            }));
+            
+            const shipping = { address, city, state, zip, flat_fee: SHIPPING_COST_CENTS };
+            const subtotalCents = lineItems.reduce((sum, i) => sum + i.price_data.unit_amount * i.quantity, 0);
+            const shippingCostCents = shipping.flat_fee * 100;
+            const totalCents = subtotalCents + shippingCostCents;
+
+            try {
+                const res = await fetch(CHECKOUT_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lineItems, customerEmail: email, customerName: name, customerPhone: phone, shipping })
+                });
+                const data = await res.json();
+                if (res.ok && data.url) {
+                    window.location.href = data.url; // Redirect to Stripe Checkout
+                } else {
+                    console.error("Checkout error:", data);
+                    showMessage("Error: " + (data.error || "Failed to create checkout session."));
+                }
+            } catch (err) {
+                console.error("Checkout error:", err);
+                showMessage("An unexpected error occurred during checkout.");
+            }
+        });
+
+        document.getElementById('custPhone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^\d]/g, '');
+            if (value.length > 10) value = value.slice(0, 10);
+            let formatted = '';
+            if (value.length > 0) formatted += '(' + value.substring(0, 3);
+            if (value.length > 3) formatted += ')-' + value.substring(3, 6);
+            if (value.length > 6) formatted += '-' + value.substring(6, 10);
+            e.target.value = formatted;
+        });
 
         // Google Places Autocomplete
         function initAutocomplete() {
@@ -645,20 +591,19 @@
                 let city = '', state = '', zip = '';
                 for (const component of components) {
                     const type = component.types[0];
-                    if (type === 'locality') {
-                        city = component.long_name;
-                    } else if (type === 'administrative_area_level_1') {
-                        state = component.short_name;
-                    } else if (type === 'postal_code') {
-                        zip = component.long_name;
-                    }
+                    if (type === 'locality') city = component.long_name;
+                    else if (type === 'administrative_area_level_1') state = component.short_name;
+                    else if (type === 'postal_code') zip = component.long_name;
                 }
                 document.getElementById('custCity').value = city;
                 document.getElementById('custState').value = state;
                 document.getElementById('custZip').value = zip;
             });
         }
+        window.onload = initAutocomplete; // Ensure autocomplete initializes after page load
+
+        document.getElementById('y').textContent = new Date().getFullYear();
+        loadProducts();
     </script>
 </body>
 </html>
-
