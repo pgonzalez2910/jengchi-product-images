@@ -1,1 +1,1206 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Jengchi Restaurant — HR Performance System</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Serif:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --navy:#0f2d4a;--blue:#1a5f8a;--blue-mid:#2278ab;--blue-lt:#e8f3fb;
+  --gold:#c9921e;--gold-lt:#fdf4e3;--gold-dk:#a87518;
+  --cream:#f6f4ef;--white:#ffffff;
+  --border:#dedad2;--border-dk:#c8c3b8;
+  --text:#1a1a2a;--text-2:#3d3d4d;--muted:#6b7280;--muted-lt:#9ca3af;
+  --green:#1a6e3c;--green-lt:#e6f4ec;
+  --red:#b5281e;--red-lt:#fdf0ee;
+  --amber:#c97a1e;--amber-lt:#fef3e2;
+  --purple:#5c3ea8;--purple-lt:#f0ecfc;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);
+  --shadow:0 2px 12px rgba(0,0,0,.09);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.13);
+  --r:10px; --r-sm:6px; --r-lg:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--cream);color:var(--text);font-size:14px;line-height:1.55}
+
+/* ── HEADER ── */
+.hdr{background:var(--navy);position:sticky;top:0;z-index:300;border-bottom:3px solid var(--gold)}
+.hdr-inner{max-width:1080px;margin:0 auto;padding:0 24px}
+.hdr-top{display:flex;align-items:center;gap:16px;padding:12px 0 0}
+.logo-img{height:48px;width:auto;border-radius:6px;object-fit:contain;background:rgba(255,255,255,.08);padding:4px}
+.logo-fallback{height:48px;width:48px;border-radius:6px;background:var(--gold);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700}
+.hdr-brand{flex:1}
+.hdr-name{font-family:'IBM Plex Serif',serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:-.2px}
+.hdr-sub{font-size:11px;color:rgba(255,255,255,.55);letter-spacing:.6px;text-transform:uppercase;margin-top:1px}
+.hdr-date{font-size:12px;color:rgba(255,255,255,.5);white-space:nowrap}
+
+/* ── TABS ── */
+.tab-bar{display:flex;gap:0;margin-top:10px}
+.tab-btn{padding:10px 24px;background:transparent;border:none;border-bottom:3px solid transparent;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:600;color:rgba(255,255,255,.55);cursor:pointer;transition:all .2s;letter-spacing:.1px}
+.tab-btn:hover:not(.active){color:rgba(255,255,255,.8)}
+.tab-btn.active{color:#fff;border-bottom-color:var(--gold)}
+
+/* ── DISCLAIMER BANNER ── */
+.disclaimer-banner{background:linear-gradient(135deg,#fff9ee,#fffcf5);border:1px solid #e8d59a;border-left:4px solid var(--gold);border-radius:var(--r);padding:14px 18px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start}
+.disc-icon{font-size:18px;margin-top:1px;flex-shrink:0}
+.disc-text{font-size:12.5px;color:#6b5a20;line-height:1.6}
+.disc-text strong{color:#4a3a0e;font-weight:600}
+
+/* ── MAIN ── */
+.main{max-width:1080px;margin:0 auto;padding:24px 24px 60px}
+.tab-pane{display:none}.tab-pane.active{display:block}
+.pg-title{font-family:'IBM Plex Serif',serif;font-size:22px;font-weight:700;color:var(--navy);letter-spacing:-.3px}
+.pg-sub{font-size:13px;color:var(--muted);margin:4px 0 20px;line-height:1.5}
+
+/* ── SECTION BOX ── */
+.sbox{background:var(--white);border:1px solid var(--border);border-top:3px solid var(--blue);border-radius:var(--r-lg);padding:22px 26px;margin-bottom:18px;box-shadow:var(--shadow)}
+.sbox.gold{border-top-color:var(--gold)}
+.sbox.green{border-top-color:var(--green)}
+.sbox.amber{border-top-color:var(--amber)}
+.sbox.purple{border-top-color:var(--purple)}
+.sbox.red{border-top-color:var(--red)}
+.sbox.navy{border-top-color:var(--navy)}
+.stitle{font-family:'IBM Plex Serif',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+
+/* ── SEARCH ── */
+.s-wrap{position:relative;max-width:540px}
+.s-box{display:flex;align-items:center;gap:10px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--white);padding:10px 14px;box-shadow:var(--shadow-sm);transition:border-color .15s}
+.s-box:focus-within{border-color:var(--blue)}
+.s-icon{font-size:16px;opacity:.4}
+.s-input{border:none;outline:none;flex:1;font-size:14px;color:var(--text);background:transparent;font-family:'IBM Plex Sans',sans-serif}
+.s-input::placeholder{color:#bbb}
+.s-drop{position:absolute;top:calc(100% + 5px);left:0;right:0;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);z-index:999;display:none}
+.s-drop.open{display:block}
+.s-item{display:flex;align-items:center;gap:12px;padding:11px 16px;cursor:pointer;border-bottom:1px solid #f5f4f0;transition:background .1s}
+.s-item:last-child{border-bottom:none}
+.s-item:hover{background:#f8f7f2}
+.s-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-mid));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0}
+.s-name{font-weight:600;color:var(--text);font-size:13.5px}
+.s-meta{font-size:11.5px;color:var(--muted);margin-top:1px}
+.s-pill{margin-left:auto;font-size:11px;font-weight:700;border-radius:20px;padding:2px 9px;white-space:nowrap}
+.pill-active{background:var(--green-lt);color:var(--green)}
+.pill-inactive{background:var(--red-lt);color:var(--red)}
+.s-empty{padding:16px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ── EMPLOYEE CARD ── */
+.emp-card{background:linear-gradient(135deg,#f0f7ff,#faf9f5);border:1px solid #c8dff0;border-radius:var(--r);padding:18px 22px;margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 20px}
+.ef-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:3px}
+.ef-val{font-size:13.5px;color:var(--text);font-weight:500}
+
+/* ── REVIEW TYPE CARDS ── */
+.rt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.rt-card{border:2px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;cursor:pointer;background:#fafaf8;transition:all .2s;position:relative;overflow:hidden}
+.rt-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.rt-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue);opacity:0;transition:opacity .2s}
+.rt-card.sel::before{opacity:1}
+.rt-card.sel-blue{border-color:var(--blue);background:var(--blue-lt)}
+.rt-card.sel-blue::before{background:var(--blue);opacity:1}
+.rt-card.sel-gold{border-color:var(--gold);background:var(--gold-lt)}
+.rt-card.sel-gold::before{background:var(--gold);opacity:1}
+.rt-card.sel-purple{border-color:var(--purple);background:var(--purple-lt)}
+.rt-card.sel-purple::before{background:var(--purple);opacity:1}
+.rt-ck{position:absolute;top:10px;right:12px;font-size:14px;display:none}
+.rt-card.sel-blue .rt-ck,.rt-card.sel-gold .rt-ck,.rt-card.sel-purple .rt-ck{display:block}
+.rt-card.sel-blue .rt-ck{color:var(--blue)}
+.rt-card.sel-gold .rt-ck{color:var(--gold)}
+.rt-card.sel-purple .rt-ck{color:var(--purple)}
+.rt-icon{font-size:28px;margin-bottom:10px}
+.rt-name{font-family:'IBM Plex Serif',serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:5px}
+.rt-desc{font-size:12px;color:var(--muted);line-height:1.5}
+
+/* ── YEAR + POSITION ROW ── */
+.config-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+.cfg-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;white-space:nowrap}
+.yr-sel{border:1.5px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;font-size:13.5px;background:var(--white);outline:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;color:var(--text)}
+.yr-sel:focus{border-color:var(--blue)}
+.pc-btns{display:flex;gap:6px;flex-wrap:wrap}
+.pc-btn{padding:6px 14px;border:1.5px solid var(--border);border-radius:20px;background:var(--white);font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif}
+.pc-btn:hover{border-color:var(--blue-mid);color:var(--blue)}
+.pc-btn.active{border-color:var(--blue);background:var(--blue);color:#fff}
+
+/* ── REVIEWER INFO ── */
+.rev-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:580px}
+
+/* ── FIELDS ── */
+.fl{display:block;font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.fi,.fs,.fta{display:block;width:100%;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;font-size:13.5px;color:var(--text);background:#fafaf8;outline:none;font-family:'IBM Plex Sans',sans-serif;transition:border-color .15s}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--blue);background:var(--white)}
+.fi[readonly]{background:#f2f1ec;color:var(--muted);cursor:default}
+.fta{resize:vertical}
+
+/* ── QUESTION SECTIONS ── */
+.q-section{margin-bottom:0}
+.q-row{margin-bottom:20px}
+.q-label{display:block;font-size:13.5px;font-weight:500;color:var(--text-2);margin-bottom:9px;line-height:1.45}
+
+/* ── RATING CIRCLES ── */
+.rating-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.r-btn{width:36px;height:36px;border-radius:50%;border:2px solid var(--border-dk);background:var(--white);color:var(--muted);font-weight:700;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.r-btn:hover{border-color:var(--gold);transform:scale(1.08)}
+.r-btn.active{border-color:var(--gold);background:var(--gold);color:#fff;box-shadow:0 2px 8px rgba(201,146,30,.35)}
+.r-lbl{font-size:12px;color:var(--muted);font-style:italic;margin-left:8px}
+
+/* ── OVERALL RATING ── */
+.overall-opts{display:flex;flex-direction:column;gap:9px}
+.ov-opt{display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 12px;border-radius:var(--r-sm);border:1.5px solid transparent;transition:all .15s}
+.ov-opt:hover{background:#f8f7f2}
+.ov-opt.selected{background:var(--blue-lt);border-color:var(--blue)}
+.ov-opt input[type=radio]{width:17px;height:17px;cursor:pointer;flex-shrink:0}
+.ov-label{font-size:13.5px;font-weight:500;color:#444}
+.ov-opt.selected .ov-label{font-weight:700}
+
+/* ── SCORE TRACKER BAR ── */
+.score-tracker{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px 22px;margin-bottom:18px;display:none;box-shadow:var(--shadow-sm)}
+.tracker-inner{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.tracker-kpi{text-align:center;min-width:80px}
+.tkpi-val{font-family:'IBM Plex Serif',serif;font-size:22px;font-weight:700;color:var(--navy)}
+.tkpi-lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.tracker-sep{width:1px;height:40px;background:var(--border)}
+.tracker-bar-wrap{flex:1;min-width:200px}
+.tracker-bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px}
+.tracker-bar-bg{height:8px;background:#eee;border-radius:4px;overflow:hidden}
+.tracker-bar-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--gold));border-radius:4px;transition:width .4s ease}
+
+/* ── CHARTS DASHBOARD ── */
+.charts-section{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px 28px;margin-bottom:18px;box-shadow:var(--shadow);display:none}
+.charts-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.charts-title{font-family:'IBM Plex Serif',serif;font-size:16px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.kpi-card{background:var(--cream);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;text-align:center}
+.kpi-val{font-family:'IBM Plex Serif',serif;font-size:24px;font-weight:700;color:var(--navy);line-height:1}
+.kpi-unit{font-size:11px;color:var(--muted);margin-top:1px;font-weight:600}
+.kpi-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:6px}
+.kpi-card.kpi-top{border-top:2px solid var(--green)}
+.kpi-card.kpi-low{border-top:2px solid var(--amber)}
+.charts-row{display:grid;grid-template-columns:1fr 1.2fr;gap:20px}
+.chart-box{position:relative}
+.chart-box-label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+.chart-canvas-wrap{position:relative;height:260px}
+
+/* ── DISC TYPES ── */
+.disc-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px}
+.dc-card{border:2px solid var(--border);border-radius:var(--r);padding:12px 10px;cursor:pointer;text-align:center;background:#fafaf8;transition:all .15s}
+.dc-card:hover{box-shadow:var(--shadow-sm)}
+.dc-icon{font-size:20px;margin-bottom:5px}
+.dc-lbl{font-size:11.5px;font-weight:700}
+
+/* ── DISC HISTORY ── */
+.dh-entry{border-radius:var(--r-sm);padding:12px 16px;border-left:4px solid var(--border);margin-bottom:9px}
+.dh-row{display:flex;justify-content:space-between;align-items:flex-start}
+.dh-type{font-weight:700;font-size:13px}
+.dh-date{font-size:11.5px;color:var(--muted)}
+.dh-reason{font-size:12px;color:var(--muted);margin-left:8px}
+.dh-desc{font-size:13px;color:#555;margin-top:5px;line-height:1.5}
+.dh-mgr{font-size:12px;color:var(--muted);margin-top:3px}
+
+/* ── SUBMIT AREA ── */
+.submit-area{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 26px;margin-bottom:20px;box-shadow:var(--shadow)}
+.disc-check{display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;padding:14px 16px;background:#fffcf0;border:1px solid #e8d59a;border-radius:var(--r)}
+.disc-check input[type=checkbox]{width:18px;height:18px;margin-top:1px;flex-shrink:0;cursor:pointer;accent-color:var(--navy)}
+.disc-check-label{font-size:12.5px;color:#4a3a0e;line-height:1.55}
+.submit-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.sbtn{border:none;border-radius:var(--r);padding:12px 30px;font-size:14px;font-weight:700;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.15);transition:all .2s;color:#fff}
+.sbtn:disabled{background:#ccc!important;cursor:not-allowed;box-shadow:none}
+.sbtn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.msg-ok{color:var(--green);font-weight:700;font-size:13.5px;display:none}
+.msg-err{color:var(--red);font-size:13px;display:none}
+
+/* ── UTILS ── */
+.empty-state{text-align:center;padding:28px;background:#f9f8f4;border-radius:var(--r);color:var(--muted);font-size:13.5px}
+.spinner-sm{font-size:13px;color:var(--muted)}
+.divider{height:1px;background:var(--border);margin:20px 0}
+.section-num{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:4px}
+
+@media(max-width:700px){
+  .rt-grid{grid-template-columns:1fr}
+  .disc-grid{grid-template-columns:repeat(3,1fr)}
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .charts-row{grid-template-columns:1fr}
+  .rev-row{grid-template-columns:1fr}
+  .hdr-inner{padding:0 16px}
+  .main{padding:16px 14px 50px}
+  .sbox{padding:16px 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-top">
+      <img src="https://raw.githubusercontent.com/pgonzalez2910/jengchi-product-images/main/jengchilogo.jpg"
+        class="logo-img" alt="Jengchi Logo"
+        onerror="this.style.display='none';document.getElementById('logoFallback').style.display='flex'"/>
+      <div id="logoFallback" class="logo-fallback" style="display:none">🍜</div>
+      <div class="hdr-brand">
+        <div class="hdr-name">Jengchi Restaurant</div>
+        <div class="hdr-sub">Human Resources Management System</div>
+      </div>
+      <div class="hdr-date" id="hdrDate"></div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('performance',this)">📋 Performance Review</button>
+      <button class="tab-btn"        onclick="switchTab('disciplinary',this)">⚠️ Disciplinary Action</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ══════════════ PERFORMANCE TAB ══════════════ -->
+<div id="tab-performance" class="tab-pane active">
+
+  <div class="pg-title">Performance Evaluation</div>
+  <p class="pg-sub">Search for an employee, select review type and position category, then complete the evaluation form.</p>
+
+  <!-- Disclaimer -->
+  <div class="disclaimer-banner">
+    <span class="disc-icon">📌</span>
+    <div class="disc-text">
+      <strong>Confidentiality Notice:</strong> This performance evaluation is a confidential HR document for internal use only. All ratings and comments must be based on directly observed job performance during the review period. The employee will have the opportunity to review, discuss, and acknowledge this evaluation. Signatures from both manager and employee confirm receipt and discussion — not necessarily agreement with all content. Unauthorized disclosure is prohibited.
+    </div>
+  </div>
+
+  <!-- Step 1 Employee -->
+  <div class="sbox">
+    <div class="stitle">👤 Step 1 &mdash; Select Employee</div>
+    <div class="s-wrap" id="perfSearchWrap">
+      <div class="s-box">
+        <span class="s-icon">🔍</span>
+        <input id="perfInput" class="s-input" placeholder="Search by employee name or ID…"
+          oninput="doSearch('perf',this.value)" onfocus="openDrop('perf')" autocomplete="off"/>
+        <span id="perfSpinner" class="spinner-sm" style="display:none">⏳</span>
+      </div>
+      <div id="perfDrop" class="s-drop"></div>
+    </div>
+    <div id="perfCard" style="display:none"></div>
+  </div>
+
+  <!-- Step 2 Review Type -->
+  <div class="sbox" id="perfTypeSection" style="display:none">
+    <div class="stitle">📂 Step 2 &mdash; Select Review Type</div>
+    <div class="rt-grid">
+      <div class="rt-card" id="rt-annual" onclick="selReviewType('annual')">
+        <div class="rt-ck">✓</div>
+        <div class="rt-icon">📋</div>
+        <div class="rt-name">Annual Performance Review</div>
+        <div class="rt-desc">Comprehensive annual evaluation covering all role-specific competencies, goal achievement, and career development.</div>
+      </div>
+      <div class="rt-card" id="rt-coaching" onclick="selReviewType('coaching')">
+        <div class="rt-ck">✓</div>
+        <div class="rt-icon">🤝</div>
+        <div class="rt-name">Coaching &amp; Development Plan</div>
+        <div class="rt-desc">A structured coaching conversation identifying development gaps, setting objectives, and building an actionable improvement path.</div>
+      </div>
+      <div class="rt-card" id="rt-progress" onclick="selReviewType('progress')">
+        <div class="rt-ck">✓</div>
+        <div class="rt-icon">🔍</div>
+        <div class="rt-name">Progress Check-In</div>
+        <div class="rt-desc">Post-coaching follow-up assessing goal achievement, behavioral change, and readiness to return to standard standing.</div>
+      </div>
+    </div>
+
+    <!-- Year + Position row -->
+    <div class="config-row" id="configRow" style="display:none">
+      <span class="cfg-label" id="yrLabel" style="display:none">Review Year:</span>
+      <select class="yr-sel" id="yrSel" style="display:none">
+        <option>2025</option><option>2026</option><option>2027</option>
+        <option>2028</option><option>2029</option><option>2030</option>
+      </select>
+      <div style="width:1px;height:28px;background:var(--border)" id="configDivider" style="display:none"></div>
+      <span class="cfg-label">Position Category:</span>
+      <div class="pc-btns" id="pcBtns">
+        <button class="pc-btn" id="pc-foh"             onclick="setPosCat('foh')">Front of House</button>
+        <button class="pc-btn" id="pc-boh"             onclick="setPosCat('boh')">Back of House</button>
+        <button class="pc-btn" id="pc-kitchen_lead"    onclick="setPosCat('kitchen_lead')">Kitchen Leadership</button>
+        <button class="pc-btn" id="pc-management"      onclick="setPosCat('management')">Management</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3 Reviewer -->
+  <div class="sbox" id="perfReviewerSection" style="display:none">
+    <div class="stitle">✍️ Step 3 &mdash; Reviewer Information</div>
+    <div class="rev-row">
+      <div><label class="fl">Reviewer Full Name *</label><input id="revName" class="fi" placeholder="Full name"/></div>
+      <div><label class="fl">Position / Title</label><input id="revTitle" class="fi" placeholder="e.g., Kitchen Manager"/></div>
+    </div>
+  </div>
+
+  <!-- Score Tracker -->
+  <div class="score-tracker" id="scoreTracker">
+    <div class="tracker-inner">
+      <div class="tracker-kpi"><div class="tkpi-val" id="tAvg">—</div><div class="tkpi-lbl">Avg Score</div></div>
+      <div class="tracker-sep"></div>
+      <div class="tracker-kpi"><div class="tkpi-val" id="tRated">0</div><div class="tkpi-lbl">Rated</div></div>
+      <div class="tracker-sep"></div>
+      <div class="tracker-kpi"><div class="tkpi-val" id="tTotal">—</div><div class="tkpi-lbl">Total Q's</div></div>
+      <div class="tracker-sep"></div>
+      <div class="tracker-bar-wrap">
+        <div class="tracker-bar-label"><span>Completion</span><span id="tPct">0%</span></div>
+        <div class="tracker-bar-bg"><div class="tracker-bar-fill" id="tBar" style="width:0"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Questions Container -->
+  <div id="perfQs"></div>
+
+  <!-- Charts Dashboard -->
+  <div class="charts-section" id="chartsDash">
+    <div class="charts-header">
+      <div class="charts-title">📊 Performance Dashboard <span style="font-size:12px;color:var(--muted);font-style:italic;font-family:'IBM Plex Sans'">&nbsp;— Updates in real time</span></div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-val" id="kAvg">—</div><div class="kpi-unit">/ 5.00</div><div class="kpi-lbl">Overall Avg</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="kRated">—</div><div class="kpi-unit">Questions</div><div class="kpi-lbl">Rated</div></div>
+      <div class="kpi-card kpi-top"><div class="kpi-val" style="font-size:14px;font-weight:700;color:var(--green)" id="kTop">—</div><div class="kpi-lbl">Highest Category</div></div>
+      <div class="kpi-card kpi-low"><div class="kpi-val" style="font-size:14px;font-weight:700;color:var(--amber)" id="kLow">—</div><div class="kpi-lbl">Needs Attention</div></div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-box"><div class="chart-box-label">Competency Radar</div><div class="chart-canvas-wrap"><canvas id="radarChart"></canvas></div></div>
+      <div class="chart-box"><div class="chart-box-label">Category Scores</div><div class="chart-canvas-wrap"><canvas id="barChart"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <div class="submit-area" id="perfSubmitArea" style="display:none">
+    <div class="disc-check">
+      <input type="checkbox" id="perfAckCheck"/>
+      <label for="perfAckCheck" class="disc-check-label">
+        I confirm that the ratings and comments in this evaluation are based on documented, observed performance during the review period. I understand this review will be discussed with the employee and retained in their personnel file per company HR policy.
+      </label>
+    </div>
+    <div class="submit-row">
+      <button id="perfSaveBtn" class="sbtn" style="background:var(--navy)" onclick="submitReview()">Submit Evaluation</button>
+      <span class="msg-ok" id="perfOk">✅ Evaluation submitted successfully!</span>
+      <span class="msg-err" id="perfErr"></span>
+    </div>
+  </div>
+
+</div><!-- /performance -->
+
+
+<!-- ══════════════ DISCIPLINARY TAB ══════════════ -->
+<div id="tab-disciplinary" class="tab-pane">
+  <div class="pg-title">Disciplinary Action</div>
+  <p class="pg-sub">View employee discipline history or issue a new disciplinary action.</p>
+
+  <div class="disclaimer-banner">
+    <span class="disc-icon">⚖️</span>
+    <div class="disc-text">
+      <strong>HR Notice:</strong> All disciplinary actions must be based on documented incidents and consistent application of company policy. Before issuing a disciplinary action, ensure the employee has been informed of the performance or conduct issue. This record will be maintained in the employee's personnel file. Consult HR for serious violations or terminations.
+    </div>
+  </div>
+
+  <div class="sbox">
+    <div class="stitle">👤 Step 1 &mdash; Select Employee</div>
+    <div class="s-wrap" id="discSearchWrap">
+      <div class="s-box">
+        <span class="s-icon">🔍</span>
+        <input id="discInput" class="s-input" placeholder="Search by employee name or ID…"
+          oninput="doSearch('disc',this.value)" onfocus="openDrop('disc')" autocomplete="off"/>
+        <span id="discSpinner" class="spinner-sm" style="display:none">⏳</span>
+      </div>
+      <div id="discDrop" class="s-drop"></div>
+    </div>
+    <div id="discCard" style="display:none"></div>
+  </div>
+
+  <div class="sbox green" id="discHistSection" style="display:none">
+    <div class="stitle">📋 Discipline History</div>
+    <div id="discHistContent"></div>
+  </div>
+
+  <div class="sbox red" id="discNewSection" style="display:none">
+    <div class="stitle">⚠️ Step 2 &mdash; Issue Disciplinary Action</div>
+    <div class="disc-grid">
+      <div class="dc-card" id="dc-verbal"      onclick="selDisc('verbal')"      ><div class="dc-icon">💬</div><div class="dc-lbl" style="color:#1a6e3c">Verbal Warning</div></div>
+      <div class="dc-card" id="dc-written"     onclick="selDisc('written')"     ><div class="dc-icon">📝</div><div class="dc-lbl" style="color:#c9921e">Written Warning</div></div>
+      <div class="dc-card" id="dc-final"       onclick="selDisc('final')"       ><div class="dc-icon">🚨</div><div class="dc-lbl" style="color:#b5281e">Final Warning</div></div>
+      <div class="dc-card" id="dc-pip"         onclick="selDisc('pip')"         ><div class="dc-icon">⚠️</div><div class="dc-lbl" style="color:#5c3ea8">Coaching Plan</div></div>
+      <div class="dc-card" id="dc-suspension"  onclick="selDisc('suspension')"  ><div class="dc-icon">⛔</div><div class="dc-lbl" style="color:#c05020">Suspension</div></div>
+      <div class="dc-card" id="dc-termination" onclick="selDisc('termination')" ><div class="dc-icon">❌</div><div class="dc-lbl" style="color:#1a1a2a">Termination</div></div>
+    </div>
+    <div id="discFormWrap" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div><label class="fl">Reason for Action *</label>
+          <select id="dReason" class="fs">
+            <option value="">— Select reason —</option>
+            <option>Attendance / Excessive Tardiness</option><option>No Call / No Show</option>
+            <option>Insubordination</option><option>Food Safety Violation</option>
+            <option>Health Code / Sanitation Violation</option><option>Policy Violation</option>
+            <option>Guest Complaint — Conduct</option><option>Guest Complaint — Service Quality</option>
+            <option>Unsatisfactory Job Performance</option><option>Misconduct</option>
+            <option>Theft / Dishonesty</option><option>Workplace Harassment</option>
+            <option>Substance Use On Premises</option><option>Other</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div><label class="fl">Incident Date *</label><input type="date" id="dIncDate" class="fi"/></div>
+          <div><label class="fl">Issue Date</label><input type="date" id="dIssDate" class="fi" readonly/></div>
+        </div>
+        <div><label class="fl">Description of Incident *</label>
+          <textarea id="dDesc" class="fta" rows="4" placeholder="Provide a detailed, factual account of the incident — include date, time, location, and specific observed behavior…"></textarea>
+        </div>
+        <div><label class="fl">Corrective Action Required</label>
+          <textarea id="dCorrect" class="fta" rows="3" placeholder="What specific, measurable behavior change is required from the employee?"></textarea>
+        </div>
+        <div><label class="fl">Consequence if Not Corrected</label>
+          <textarea id="dConsq" class="fta" rows="2" placeholder="e.g., Final written warning, suspension without pay, or termination of employment"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div><label class="fl">Issuing Manager *</label><input id="dMgr" class="fi" placeholder="Manager full name"/></div>
+          <div><label class="fl">HR Witness (optional)</label><input id="dWit" class="fi" placeholder="Witness name"/></div>
+        </div>
+        <div class="submit-row">
+          <button id="discSaveBtn" class="sbtn" style="background:var(--red)" onclick="submitDisc()">Issue Action</button>
+          <span class="msg-ok" id="discOk">✅ Saved successfully!</span>
+          <span class="msg-err" id="discErr"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /disciplinary -->
+
+</div><!-- /main -->
+
+<script>
+/* ── SUPABASE ── */
+const SB_URL = "https://kpldzwlftkvjjntgsqxx.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwbGR6d2xmdGt2ampudGdzcXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2MzE5NzAsImV4cCI6MjA2MjIwNzk3MH0.qnWbOQv2RLPsIyO-oRwQkAN2VhmmdhTBt46SweUsLbs";
+if (typeof window._supabaseClient === 'undefined') {
+  window._supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
+}
+const db = window._supabaseClient;
+
+/* ── HELPERS ── */
+const todayStr = () => new Date().toISOString().split("T")[0];
+const genId  = (pfx) => pfx + "-" + Date.now() + "-" + Math.random().toString(36).slice(2,6).toUpperCase();
+function calcTenure(h){
+  if(!h) return "—";
+  const s=new Date(h),n=new Date();
+  const t=(n.getFullYear()-s.getFullYear())*12+(n.getMonth()-s.getMonth());
+  if(t<1) return "<1 mo"; if(t<12) return t+"mo";
+  const y=Math.floor(t/12),m=t%12;
+  return m>0?y+"yr "+m+"mo":y+"yr";
+}
+
+const DISC_COLORS = {verbal:"#1a6e3c",written:"#c9921e",final:"#b5281e",pip:"#5c3ea8",suspension:"#c05020",termination:"#1a1a2a"};
+const DISC_LABELS = {verbal:"Verbal Warning",written:"Written Warning",final:"Final Warning",pip:"Coaching Plan",suspension:"Suspension",termination:"Termination"};
+const DISC_ICONS  = {verbal:"💬",written:"📝",final:"🚨",pip:"⚠️",suspension:"⛔",termination:"❌"};
+const RL_LABELS   = ["","Needs Improvement","Below Expectations","Meets Expectations","Exceeds Expectations","Outstanding"];
+const OV_OPTS = [
+  {v:1,label:"1 — Unsatisfactory: Significant performance gaps requiring immediate action",color:"#b5281e"},
+  {v:2,label:"2 — Below Expectations: Does not consistently meet role requirements",color:"#c05020"},
+  {v:3,label:"3 — Meets Expectations: Consistently fulfills all core role requirements",color:"#1a6e3c"},
+  {v:4,label:"4 — Exceeds Expectations: Regularly surpasses role requirements",color:"#1a5f8a"},
+  {v:5,label:"5 — Outstanding: Exemplary performance; a model for others",color:"#5c3ea8"},
+];
+
+/* ── STATE ── */
+let perfEmp=null, discEmp=null;
+let revType=null, posCat=null;
+let answers={}, discHist=[];
+let radarChartInst=null, barChartInst=null;
+let currentSections=null;
+
+/* ── INIT ── */
+document.addEventListener("DOMContentLoaded",()=>{
+  const t=todayStr();
+  document.getElementById("hdrDate").textContent = t;
+  document.getElementById("dIncDate").value = t;
+  document.getElementById("dIssDate").value = t;
+  const yr=new Date().getFullYear();
+  const sel=document.getElementById("yrSel");
+  for(const o of sel.options) if(+o.value===yr){o.selected=true;break;}
+  document.addEventListener("click",e=>{
+    if(!e.target.closest("#perfSearchWrap")) closeDrop("perf");
+    if(!e.target.closest("#discSearchWrap")) closeDrop("disc");
+  });
+});
+
+/* ── TABS ── */
+function switchTab(name,btn){
+  document.querySelectorAll(".tab-pane").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+  btn.classList.add("active");
+}
+
+/* ── SEARCH ── */
+const sTimers={};
+function doSearch(ctx,val){
+  clearTimeout(sTimers[ctx]);
+  const drop=document.getElementById(ctx+"Drop");
+  const spin=document.getElementById(ctx+"Spinner");
+  if(val.length<2){drop.innerHTML="";drop.classList.remove("open");return;}
+  spin.style.display="inline";
+  sTimers[ctx]=setTimeout(async()=>{
+    const {data}=await db.from("employees2025")
+      .select("id,employee_id,first_name,last_name,job_title,department,hire_date,report_to,employment_status")
+      .or(`first_name.ilike.%${val}%,last_name.ilike.%${val}%,employee_id.ilike.%${val}%`)
+      .limit(10);
+    spin.style.display="none";
+    renderDrop(ctx,data||[],val);
+  },280);
+}
+function openDrop(ctx){const d=document.getElementById(ctx+"Drop");if(d.innerHTML.trim())d.classList.add("open");}
+function closeDrop(ctx){document.getElementById(ctx+"Drop").classList.remove("open");}
+function renderDrop(ctx,items,val){
+  const d=document.getElementById(ctx+"Drop");
+  if(!items.length){d.innerHTML=`<div class="s-empty">No employees found for "${val}"</div>`;d.classList.add("open");return;}
+  d.innerHTML=items.map(e=>`
+    <div class="s-item" onclick="selEmp('${ctx}',${e.id})">
+      <div class="s-avatar">${(e.first_name||"?")[0]}${(e.last_name||"?")[0]}</div>
+      <div>
+        <div class="s-name">${e.first_name} ${e.last_name}</div>
+        <div class="s-meta">${e.employee_id||"—"} &middot; ${e.job_title||"—"} &middot; ${e.department||"—"}</div>
+      </div>
+      <span class="s-pill ${(e.employment_status||"Active")==="Active"?"pill-active":"pill-inactive"}">${e.employment_status||"Active"}</span>
+    </div>`).join("");
+  d.classList.add("open");
+}
+
+/* ── SELECT EMPLOYEE ── */
+async function selEmp(ctx,id){
+  closeDrop(ctx);
+  const fields = ctx==="disc"
+    ? "id,employee_id,first_name,last_name,job_title,department,hire_date,report_to,employment_status,discipline_history,verbal_warning_count,disciplinary_warning_count,final_warning_count,termination_letter_count"
+    : "id,employee_id,first_name,last_name,job_title,department,hire_date,report_to,employment_status";
+  const {data}=await db.from("employees2025").select(fields).eq("id",id).single();
+  if(!data) return;
+  const inpId = ctx==="perf"?"perfInput":"discInput";
+  document.getElementById(inpId).value=data.first_name+" "+data.last_name;
+  if(ctx==="perf"){
+    perfEmp=data; answers={}; revType=null; posCat=null;
+    document.getElementById("perfCard").innerHTML=buildEmpCard(data);
+    document.getElementById("perfCard").style.display="block";
+    document.getElementById("perfTypeSection").style.display="block";
+    document.getElementById("perfReviewerSection").style.display="none";
+    document.getElementById("perfQs").innerHTML="";
+    document.getElementById("perfSubmitArea").style.display="none";
+    document.getElementById("scoreTracker").style.display="none";
+    document.getElementById("chartsDash").style.display="none";
+    // auto-detect position
+    const autoCat=detectPos(data.job_title);
+    ["annual","coaching","progress"].forEach(k=>{
+      document.getElementById("rt-"+k).className="rt-card";
+    });
+    document.getElementById("configRow").style.display="none";
+    // Pre-select position category buttons
+    ["foh","boh","kitchen_lead","management"].forEach(k=>{
+      document.getElementById("pc-"+k).classList.remove("active");
+    });
+    posCat=autoCat;
+    if(document.getElementById("pc-"+autoCat))
+      document.getElementById("pc-"+autoCat).classList.add("active");
+  } else {
+    discEmp=data; discHist=data.discipline_history||[];
+    document.getElementById("discCard").innerHTML=buildEmpCard(data);
+    document.getElementById("discCard").style.display="block";
+    document.getElementById("discHistSection").style.display="block";
+    document.getElementById("discNewSection").style.display="block";
+    renderDiscHist();
+    resetDiscForm();
+  }
+}
+
+function buildEmpCard(e){
+  const flds=[
+    ["Employee",e.first_name+" "+e.last_name],
+    ["Employee ID",e.employee_id||"—"],
+    ["Position",e.job_title||"—"],
+    ["Department",e.department||"—"],
+    ["Hire Date",e.hire_date||"—"],
+    ["Tenure",calcTenure(e.hire_date)],
+    ["Reports To",e.report_to||"—"],
+    ["Status",e.employment_status||"Active"],
+    ["Review Date",todayStr()],
+  ];
+  return`<div class="emp-card">${flds.map(([k,v])=>`<div><div class="ef-label">${k}</div><div class="ef-val">${v}</div></div>`).join("")}</div>`;
+}
+
+/* ── POSITION DETECT ── */
+function detectPos(jt){
+  if(!jt) return "foh";
+  const j=jt.toLowerCase();
+  if(/general manager|gm|director|owner|operation/i.test(j)) return "management";
+  if(/restaurant manager|floor manager|assistant manager|shift manager|shift lead/i.test(j)) return "management";
+  if(/head chef|executive chef|sous chef|kitchen manager|chef de/i.test(j)) return "kitchen_lead";
+  if(/line cook|prep cook|cook|dishwash|steward|expedit|kitchen|prep/i.test(j)) return "boh";
+  return "foh";
+}
+function setPosCat(cat){
+  posCat=cat;
+  ["foh","boh","kitchen_lead","management"].forEach(k=>document.getElementById("pc-"+k).classList.remove("active"));
+  document.getElementById("pc-"+cat).classList.add("active");
+  if(revType) renderQuestions(revType,cat);
+}
+
+/* ── REVIEW TYPE SELECT ── */
+const RT_COLORS={annual:"blue",coaching:"gold",progress:"purple"};
+function selReviewType(type){
+  revType=type;
+  ["annual","coaching","progress"].forEach(k=>{
+    const el=document.getElementById("rt-"+k);
+    el.className="rt-card"+(k===type?" sel-"+RT_COLORS[k]:"");
+  });
+  document.getElementById("configRow").style.display="flex";
+  const isAnnual=(type==="annual");
+  document.getElementById("yrLabel").style.display=isAnnual?"inline":"none";
+  document.getElementById("yrSel").style.display=isAnnual?"inline-block":"none";
+  document.getElementById("perfReviewerSection").style.display="block";
+  renderQuestions(type,posCat||"foh");
+}
+
+/* ═══════════════════════════════════════════════
+   QUESTION TEMPLATES
+═══════════════════════════════════════════════ */
+const TEMPLATES = {
+
+/* ── ANNUAL: MANAGEMENT ── */
+annual_management:[
+  {key:"strategic_leadership",title:"Strategic Leadership & Vision",icon:"🎯",qs:[
+    {id:"sl1",label:"Demonstrates strategic thinking and translates organizational vision into clear, actionable team priorities",t:"r"},
+    {id:"sl2",label:"Makes sound, data-informed decisions that positively impact restaurant performance and financial outcomes",t:"r"},
+    {id:"sl3",label:"Anticipates operational challenges and develops proactive, resourced solutions before issues escalate",t:"r"},
+    {id:"sl4",label:"Consistently models company values, brand standards, and leadership behaviors in all decisions",t:"r"},
+    {id:"sl5",label:"Strategic leadership observations — provide specific examples",t:"ta"},
+  ]},
+  {key:"financial_management",title:"Financial Acumen & Cost Management",icon:"📊",qs:[
+    {id:"fm1",label:"Effectively manages food cost, labor cost, and operating expenses within established budget targets",t:"r"},
+    {id:"fm2",label:"Analyzes P&L reports, sales data, and performance metrics to identify gaps and opportunities",t:"r"},
+    {id:"fm3",label:"Implements inventory control and ordering practices that minimize waste and maximize profitability",t:"r"},
+    {id:"fm4",label:"Drives revenue growth through smart scheduling, upselling initiatives, and labor optimization",t:"r"},
+    {id:"fm5",label:"Financial management comments and examples",t:"ta"},
+  ]},
+  {key:"team_development",title:"Team Development & Performance Management",icon:"👥",qs:[
+    {id:"td1",label:"Consistently coaches, develops, and holds team members accountable to performance standards",t:"r"},
+    {id:"td2",label:"Identifies high-potential employees and creates structured career development pathways",t:"r"},
+    {id:"td3",label:"Conducts timely, constructive performance conversations and documents outcomes appropriately",t:"r"},
+    {id:"td4",label:"Maintains optimal staffing levels and proactively manages talent pipeline and retention risk",t:"r"},
+    {id:"td5",label:"Team development observations and highlights",t:"ta"},
+  ]},
+  {key:"guest_experience",title:"Guest Experience & Brand Standards",icon:"⭐",qs:[
+    {id:"ge1",label:"Champions a culture of exceptional hospitality and holds the entire team accountable to brand standards",t:"r"},
+    {id:"ge2",label:"Proactively monitors and acts on guest feedback channels — reviews, surveys, and direct complaints",t:"r"},
+    {id:"ge3",label:"Resolves guest escalations with professionalism, empathy, and full brand integrity",t:"r"},
+    {id:"ge4",label:"Guest experience leadership notes",t:"ta"},
+  ]},
+  {key:"operational_excellence",title:"Operational Excellence & Compliance",icon:"⚙️",qs:[
+    {id:"oe1",label:"Maintains full compliance with health codes, food safety regulations, and labor law requirements",t:"r"},
+    {id:"oe2",label:"Manages all operational periods with consistency, precision, and accountability to SOPs",t:"r"},
+    {id:"oe3",label:"Drives measurable, continuous improvement in speed of service, quality consistency, and waste reduction",t:"r"},
+    {id:"oe4",label:"Maintains facility, equipment upkeep, and sanitation to health department inspection-ready standards",t:"r"},
+    {id:"oe5",label:"Operational excellence notes",t:"ta"},
+  ]},
+  {key:"communication",title:"Communication & Stakeholder Engagement",icon:"💬",qs:[
+    {id:"co1",label:"Communicates expectations and feedback with clarity, consistency, and appropriate tone across all levels",t:"r"},
+    {id:"co2",label:"Builds productive relationships with vendors, corporate teams, ownership, and community stakeholders",t:"r"},
+    {id:"co3",label:"Conducts team meetings and pre-shift briefings that are action-oriented, focused, and energizing",t:"r"},
+    {id:"co4",label:"Communication effectiveness notes",t:"ta"},
+  ]},
+  {key:"overall",title:"Overall Assessment",icon:"📋",isOverall:true,qs:[
+    {id:"ov1",label:"Overall Performance Rating",t:"ov"},
+    {id:"ov2",label:"Key accomplishments and measurable business impact this review period",t:"ta"},
+    {id:"ov3",label:"Critical development priorities for the next review period",t:"ta"},
+    {id:"ov4",label:"Agreed-upon goals, milestones, and success metrics for next period",t:"ta"},
+    {id:"ov5",label:"Manager recommendation",t:"sel",opts:["Continue in current role","Ready for increased responsibility","Eligible for promotion consideration","Performance Improvement Plan recommended","Other"]},
+    {id:"ov6",label:"Succession readiness",t:"sel",opts:["Ready for immediate advancement","Ready within 6–12 months","Long-term potential — not yet ready","Key contributor — specialized role","Not assessed at this time"]},
+  ]},
+],
+
+/* ── ANNUAL: KITCHEN LEADERSHIP ── */
+annual_kitchen_lead:[
+  {key:"culinary_mastery",title:"Culinary Excellence & Technical Mastery",icon:"👨‍🍳",qs:[
+    {id:"cm1",label:"Enforces recipe adherence, plating standards, and quality consistency across all menu items under all service conditions",t:"r"},
+    {id:"cm2",label:"Demonstrates advanced culinary technique and serves as the primary technical resource for the kitchen team",t:"r"},
+    {id:"cm3",label:"Proactively identifies menu improvement opportunities aligned with seasonality, guest trends, and cost targets",t:"r"},
+    {id:"cm4",label:"Culinary mastery observations",t:"ta"},
+  ]},
+  {key:"kitchen_operations",title:"Kitchen Operations & Efficiency",icon:"⚙️",qs:[
+    {id:"ko1",label:"Manages kitchen flow, station assignments, and line organization to optimize throughput at all service volumes",t:"r"},
+    {id:"ko2",label:"Controls food and labor costs through accurate par levels, waste reduction, and strategic prep scheduling",t:"r"},
+    {id:"ko3",label:"Maintains accurate inventory, ordering, and receiving procedures that prevent shortages and overstock",t:"r"},
+    {id:"ko4",label:"Coordinates with front-of-house leadership to ensure service timing, ticket accuracy, and seamless execution",t:"r"},
+    {id:"ko5",label:"Operations efficiency notes",t:"ta"},
+  ]},
+  {key:"food_safety",title:"Food Safety, Sanitation & Regulatory Compliance",icon:"🛡️",qs:[
+    {id:"fs1",label:"Maintains full compliance with all local health codes, food safety regulations, and company sanitation policy",t:"r"},
+    {id:"fs2",label:"Conducts and documents daily line checks, temperature logs, and sanitation audits without being prompted",t:"r"},
+    {id:"fs3",label:"Ensures proper labeling, dating, FIFO rotation, and storage of all food products at all times",t:"r"},
+    {id:"fs4",label:"Maintains health inspection readiness — zero critical violations standard upheld",t:"r"},
+    {id:"fs5",label:"Food safety compliance notes",t:"ta"},
+  ]},
+  {key:"team_leadership",title:"Team Leadership & Talent Development",icon:"👥",qs:[
+    {id:"tl1",label:"Provides clear direction, consistent feedback, and hands-on technical mentorship to all kitchen staff",t:"r"},
+    {id:"tl2",label:"Creates a kitchen culture of accountability, respect, and continuous skill development",t:"r"},
+    {id:"tl3",label:"Manages kitchen conflicts and performance issues with professionalism, fairness, and timeliness",t:"r"},
+    {id:"tl4",label:"Actively participates in hiring, onboarding, and skills training of new kitchen team members",t:"r"},
+    {id:"tl5",label:"Leadership and team development notes",t:"ta"},
+  ]},
+  {key:"innovation",title:"Innovation & Continuous Improvement",icon:"💡",qs:[
+    {id:"in1",label:"Introduces new techniques, systems, or menu concepts that add measurable operational or revenue value",t:"r"},
+    {id:"in2",label:"Stays current on culinary trends, health code updates, and competitor benchmarks",t:"r"},
+    {id:"in3",label:"Innovation and improvement observations",t:"ta"},
+  ]},
+  {key:"overall",title:"Overall Assessment",icon:"📋",isOverall:true,qs:[
+    {id:"ov1",label:"Overall Performance Rating",t:"ov"},
+    {id:"ov2",label:"Key accomplishments and kitchen impact this review period",t:"ta"},
+    {id:"ov3",label:"Development priorities for the next review period",t:"ta"},
+    {id:"ov4",label:"Goals and success metrics for next period",t:"ta"},
+    {id:"ov5",label:"Manager recommendation",t:"sel",opts:["Continue in current role","Ready for expanded responsibility","Eligible for advancement","Improvement Plan recommended","Other"]},
+  ]},
+],
+
+/* ── ANNUAL: BACK OF HOUSE ── */
+annual_boh:[
+  {key:"technical_skills",title:"Technical Skills & Culinary Proficiency",icon:"🔪",qs:[
+    {id:"ts1",label:"Executes assigned station responsibilities with required accuracy, consistency, and speed",t:"r"},
+    {id:"ts2",label:"Demonstrates proficiency with required cooking techniques, equipment, and station-specific skills",t:"r"},
+    {id:"ts3",label:"Maintains proper knife skills, equipment handling, and station safety practices throughout shift",t:"r"},
+    {id:"ts4",label:"Produces output that consistently meets recipe specifications and plating standards",t:"r"},
+    {id:"ts5",label:"Technical skill observations",t:"ta"},
+  ]},
+  {key:"food_safety_boh",title:"Food Safety & Sanitation Compliance",icon:"🛡️",qs:[
+    {id:"fsb1",label:"Adheres to all food safety regulations including temperature control and cross-contamination prevention",t:"r"},
+    {id:"fsb2",label:"Maintains workstation in a clean, organized, and inspection-ready state throughout entire shift",t:"r"},
+    {id:"fsb3",label:"Labels, dates, wraps, and rotates (FIFO) all food products per health code and company standards",t:"r"},
+    {id:"fsb4",label:"Contributes to kitchen sanitation procedures including assigned cleaning schedules",t:"r"},
+    {id:"fsb5",label:"Food safety compliance notes",t:"ta"},
+  ]},
+  {key:"productivity",title:"Productivity & Service Execution",icon:"⚡",qs:[
+    {id:"pr1",label:"Maintains required production pace during high-volume service without sacrificing quality",t:"r"},
+    {id:"pr2",label:"Communicates effectively during service — ticket calls, station handoffs, and team coordination",t:"r"},
+    {id:"pr3",label:"Completes all assigned prep to established par levels and quality standards before service begins",t:"r"},
+    {id:"pr4",label:"Adapts quickly to changes in service volume, menu modifications, or equipment challenges",t:"r"},
+    {id:"pr5",label:"Productivity and execution notes",t:"ta"},
+  ]},
+  {key:"teamwork_boh",title:"Teamwork & Kitchen Culture",icon:"🤝",qs:[
+    {id:"tw1",label:"Proactively supports teammates during rush periods — demonstrates a team-first mentality",t:"r"},
+    {id:"tw2",label:"Accepts direction and feedback from kitchen leadership with a positive, coachable attitude",t:"r"},
+    {id:"tw3",label:"Contributes to a respectful, professional, and harassment-free kitchen environment",t:"r"},
+    {id:"tw4",label:"Teamwork and culture observations",t:"ta"},
+  ]},
+  {key:"reliability_boh",title:"Reliability & Work Ethic",icon:"⏰",qs:[
+    {id:"rb1",label:"Reports to work on time, prepared, and in proper uniform for every scheduled shift",t:"r"},
+    {id:"rb2",label:"Attendance and punctuality record — unexcused absences, tardiness, and no-call/no-shows",t:"r"},
+    {id:"rb3",label:"Completes all assigned duties and side work before departing without requiring management follow-up",t:"r"},
+    {id:"rb4",label:"Demonstrates initiative — identifies tasks that need attention without being directed",t:"r"},
+    {id:"rb5",label:"Reliability and work ethic notes",t:"ta"},
+  ]},
+  {key:"overall",title:"Overall Assessment",icon:"📋",isOverall:true,qs:[
+    {id:"ov1",label:"Overall Performance Rating",t:"ov"},
+    {id:"ov2",label:"Key strengths and contributions this review period",t:"ta"},
+    {id:"ov3",label:"Areas requiring development and improvement",t:"ta"},
+    {id:"ov4",label:"Goals for next review period",t:"ta"},
+    {id:"ov5",label:"Manager recommendation",t:"sel",opts:["Continue in current role","Ready for additional station responsibility","Eligible for advancement","Coaching Plan recommended","Other"]},
+  ]},
+],
+
+/* ── ANNUAL: FRONT OF HOUSE ── */
+annual_foh:[
+  {key:"guest_experience_foh",title:"Guest Experience & Hospitality Excellence",icon:"⭐",qs:[
+    {id:"gef1",label:"Creates genuine, warm guest connections that authentically reflect the restaurant's hospitality philosophy",t:"r"},
+    {id:"gef2",label:"Anticipates guest needs proactively and personalizes service interactions to enhance the dining experience",t:"r"},
+    {id:"gef3",label:"Manages special requests, dietary restrictions, and service challenges with grace, competence, and professionalism",t:"r"},
+    {id:"gef4",label:"Contributes to positive guest reviews, repeat visits, and overall guest satisfaction scores",t:"r"},
+    {id:"gef5",label:"Guest experience observations",t:"ta"},
+  ]},
+  {key:"product_knowledge",title:"Product Knowledge & Menu Mastery",icon:"📖",qs:[
+    {id:"pk1",label:"Demonstrates comprehensive knowledge of menu items — ingredients, preparation methods, allergens, and pairings",t:"r"},
+    {id:"pk2",label:"Accurately communicates daily specials, menu changes, and promotions to guests with confidence",t:"r"},
+    {id:"pk3",label:"Offers informed, personalized recommendations aligned with guest preferences and dietary needs",t:"r"},
+    {id:"pk4",label:"Product knowledge and menu communication notes",t:"ta"},
+  ]},
+  {key:"sales_performance",title:"Sales Performance & Revenue Contribution",icon:"📈",qs:[
+    {id:"sp1",label:"Actively and naturally employs suggestive selling to increase check averages and beverage attachment rates",t:"r"},
+    {id:"sp2",label:"Meets or exceeds personal sales targets and contributes meaningfully to shift revenue goals",t:"r"},
+    {id:"sp3",label:"Maximizes table turn efficiency while preserving an exceptional, unhurried guest experience",t:"r"},
+    {id:"sp4",label:"Sales performance observations",t:"ta"},
+  ]},
+  {key:"operational_foh",title:"Operational Execution & Compliance",icon:"⚙️",qs:[
+    {id:"of1",label:"Completes all assigned opening, running, and closing side work to standard without management prompting",t:"r"},
+    {id:"of2",label:"Maintains section cleanliness, organization, and mise-en-place readiness throughout the shift",t:"r"},
+    {id:"of3",label:"Follows all POS, cash handling, tip pooling, and comp procedures accurately and with full integrity",t:"r"},
+    {id:"of4",label:"Adheres to uniform standards, grooming policy, and professional conduct expectations at all times",t:"r"},
+    {id:"of5",label:"Operational compliance notes",t:"ta"},
+  ]},
+  {key:"teamwork_foh",title:"Teamwork & Communication",icon:"🤝",qs:[
+    {id:"tf1",label:"Communicates clearly with kitchen, bar, and management to ensure seamless, coordinated service delivery",t:"r"},
+    {id:"tf2",label:"Actively assists teammates during high-volume periods without being asked",t:"r"},
+    {id:"tf3",label:"Applies pre-shift briefing information to daily service performance consistently",t:"r"},
+    {id:"tf4",label:"Manages guest concerns or team conflicts with composure and professionalism",t:"r"},
+    {id:"tf5",label:"Teamwork and communication notes",t:"ta"},
+  ]},
+  {key:"reliability_foh",title:"Reliability & Attendance",icon:"⏰",qs:[
+    {id:"rf1",label:"Reports to work on schedule, in proper uniform, and service-ready at every shift start",t:"r"},
+    {id:"rf2",label:"Attendance record — unexcused absences, late arrivals, and early departures",t:"r"},
+    {id:"rf3",label:"Provides adequate advance notice when unable to work as required by policy",t:"r"},
+    {id:"rf4",label:"Reliability and attendance notes",t:"ta"},
+  ]},
+  {key:"overall",title:"Overall Assessment",icon:"📋",isOverall:true,qs:[
+    {id:"ov1",label:"Overall Performance Rating",t:"ov"},
+    {id:"ov2",label:"Key strengths and contributions this review period",t:"ta"},
+    {id:"ov3",label:"Areas requiring development",t:"ta"},
+    {id:"ov4",label:"Goals for next review period",t:"ta"},
+    {id:"ov5",label:"Manager recommendation",t:"sel",opts:["Continue in current role","Ready for additional responsibility","Eligible for advancement","Coaching Plan recommended","Other"]},
+  ]},
+],
+
+/* ── COACHING PLAN (universal) ── */
+coaching:[
+  {key:"coaching_strengths",title:"What's Working — Employee Strengths",icon:"✅",qs:[
+    {id:"cs1",label:"Rate the employee's current overall engagement and attitude toward their role",t:"r"},
+    {id:"cs2",label:"Rate the employee's demonstrated technical skill level for their position",t:"r"},
+    {id:"cs3",label:"What specific behaviors, skills, or contributions should this employee continue and build upon?",t:"ta"},
+    {id:"cs4",label:"Describe a recent situation where this employee demonstrated their best performance",t:"ta"},
+  ]},
+  {key:"coaching_gaps",title:"Development Areas — Current Gaps",icon:"🎯",qs:[
+    {id:"cg1",label:"Rate the severity / urgency of the primary development gap (1=Minor coaching, 5=Critical/immediate action required)",t:"r"},
+    {id:"cg2",label:"Describe the specific performance gap(s) or behavioral concern(s) identified — be factual and specific",t:"ta"},
+    {id:"cg3",label:"Provide concrete examples with dates, situations, and observable impact on the team or guests",t:"ta"},
+    {id:"cg4",label:"How is this gap affecting restaurant operations, team morale, or guest experience?",t:"ta"},
+  ]},
+  {key:"coaching_goals",title:"Development Objectives — The Plan",icon:"📋",qs:[
+    {id:"cgo1",label:"Development Goal #1: Observable, specific behavior or skill change expected",t:"ta"},
+    {id:"cgo2",label:"Goal #1 — Success criteria: How will we know this goal is achieved?",t:"ta"},
+    {id:"cgo3",label:"Goal #1 deadline",t:"date"},
+    {id:"cgo4",label:"Development Goal #2 (if applicable)",t:"ta"},
+    {id:"cgo5",label:"Goal #2 deadline",t:"date"},
+  ]},
+  {key:"coaching_support",title:"Support, Resources & Manager Commitment",icon:"🤝",qs:[
+    {id:"csu1",label:"Training, resources, or tools that will be provided to support this employee's development",t:"ta"},
+    {id:"csu2",label:"Coaching check-in schedule",t:"sel",opts:["Weekly 1:1","Bi-weekly check-in","Every 30 days","After each shift for first 2 weeks","As needed"]},
+    {id:"csu3",label:"How will you as the manager actively support this employee's improvement?",t:"ta"},
+  ]},
+  {key:"coaching_employee_voice",title:"Employee's Perspective & Commitment",icon:"🗣️",qs:[
+    {id:"cev1",label:"Employee's own assessment of the development areas discussed (document their response)",t:"ta"},
+    {id:"cev2",label:"Personal goals the employee would like to achieve in this role",t:"ta"},
+    {id:"cev3",label:"Barriers the employee identifies that may affect their ability to improve — manager's plan to address them",t:"ta"},
+  ]},
+  {key:"coaching_consequences",title:"Expectations & Next Steps",icon:"⚠️",qs:[
+    {id:"cc1",label:"Coaching period duration",t:"sel",opts:["30 days","60 days","90 days","Ongoing — no fixed end date","Other"]},
+    {id:"cc2",label:"If development goals are not met by deadline, the consequence will be",t:"sel",opts:["Extended coaching period","Written warning issued","Final written warning","Demotion","Termination of employment"]},
+    {id:"cc3",label:"Additional manager notes or context not captured above",t:"ta"},
+  ]},
+],
+
+/* ── PROGRESS CHECK-IN (universal) ── */
+progress:[
+  {key:"progress_reference",title:"Original Coaching Plan Reference",icon:"📄",qs:[
+    {id:"pref1",label:"Original coaching plan / PIP start date",t:"date"},
+    {id:"pref2",label:"Summary of the original performance gaps and development goals",t:"ta"},
+  ]},
+  {key:"progress_goals",title:"Goal Achievement Review",icon:"✅",qs:[
+    {id:"pg1",label:"Goal #1 — Achievement level",t:"sel",opts:["Fully achieved — sustained improvement","Partially achieved — improvement underway","Not achieved — no observable change","Not applicable"]},
+    {id:"pg2",label:"Goal #1 — Specific evidence and behavioral observations supporting your rating",t:"ta"},
+    {id:"pg3",label:"Goal #1 — Progress rating",t:"r"},
+    {id:"pg4",label:"Goal #2 — Achievement level",t:"sel",opts:["Fully achieved — sustained improvement","Partially achieved — improvement underway","Not achieved — no observable change","Not applicable"]},
+    {id:"pg5",label:"Goal #2 — Evidence and observations",t:"ta"},
+    {id:"pg6",label:"Goal #2 — Progress rating",t:"r"},
+  ]},
+  {key:"progress_behaviors",title:"Post-Coaching Performance Assessment",icon:"📊",qs:[
+    {id:"pb1",label:"Overall attitude and engagement since the coaching plan was issued",t:"r"},
+    {id:"pb2",label:"Consistency of improved performance — are changes sustained or intermittent?",t:"r"},
+    {id:"pb3",label:"Quality of work / service delivery since coaching",t:"r"},
+    {id:"pb4",label:"Teamwork, communication, and professional conduct since coaching",t:"r"},
+    {id:"pb5",label:"Attendance and reliability since coaching",t:"r"},
+    {id:"pb6",label:"Describe the most significant behavioral changes you have observed since the coaching plan started",t:"ta"},
+    {id:"pb7",label:"Are there any areas where the employee has regressed or not maintained improvement?",t:"ta"},
+  ]},
+  {key:"progress_outcome",title:"Outcome Decision",icon:"⚖️",isOverall:true,qs:[
+    {id:"po1",label:"Coaching Plan Outcome",t:"sel",opts:["✅ Successfully completed — return to good standing","🔄 Partially completed — extend coaching period","⚠️ Goals not met — escalate to formal written warning","🚨 Goals not met — escalate to final warning","❌ Goals not met — initiate termination process"]},
+    {id:"po2",label:"If extended — new deadline and updated goals",t:"ta"},
+    {id:"po3",label:"Manager's overall assessment and recommendation",t:"ta"},
+    {id:"po4",label:"Employee's response and comments at this check-in meeting",t:"ta"},
+    {id:"po5",label:"Overall Progress Rating",t:"ov"},
+  ]},
+],
+
+};/* end TEMPLATES */
+
+/* ── RENDER QUESTIONS ── */
+function renderQuestions(type,cat){
+  const key = (type==="annual") ? "annual_"+cat : type;
+  const sections = TEMPLATES[key] || TEMPLATES["annual_foh"];
+  currentSections = sections;
+  answers = {};
+
+  const accentColors = {annual:"var(--blue)",coaching:"var(--gold)",progress:"var(--purple)"};
+  const accent = accentColors[type]||"var(--blue)";
+
+  let html="";
+  sections.forEach((sec,si)=>{
+    html+=`<div class="sbox" style="border-top-color:${accent}">
+      <div class="stitle" style="color:${accent}">${sec.icon} ${sec.title}</div>
+      <div class="q-section">`;
+    sec.qs.forEach(q=>{html+=`<div class="q-row"><label class="q-label">${q.label}</label>${renderField(q)}</div>`;});
+    html+=`</div></div>`;
+  });
+  document.getElementById("perfQs").innerHTML=html;
+  document.getElementById("perfSubmitArea").style.display="block";
+  document.getElementById("scoreTracker").style.display="block";
+
+  // Init charts
+  initCharts(sections);
+  document.getElementById("chartsDash").style.display="block";
+
+  // Total rating questions
+  const total = sections.flatMap(s=>s.qs).filter(q=>q.t==="r").length;
+  document.getElementById("tTotal").textContent = total;
+
+  setTimeout(()=>document.getElementById("perfQs").scrollIntoView({behavior:"smooth",block:"start"}),100);
+}
+
+function renderField(q){
+  if(q.t==="r") return `<div class="rating-row">${[1,2,3,4,5].map(n=>`<button class="r-btn" id="rb-${q.id}-${n}" onclick="setRating('${q.id}',${n})">${n}</button>`).join("")}<span class="r-lbl" id="rl-${q.id}">Not rated</span></div>`;
+  if(q.t==="ov") return `<div class="overall-opts">${OV_OPTS.map(o=>`<label class="ov-opt" id="oo-${q.id}-${o.v}"><input type="radio" name="ov_${q.id}" value="${o.v}" onchange="setAns('${q.id}',${o.v});setOvStyle('${q.id}',${o.v})"/><span class="ov-label" style="color:${o.color}">${o.label}</span></label>`).join("")}</div>`;
+  if(q.t==="sel") return `<select class="fs" onchange="setAns('${q.id}',this.value)"><option value="">— Select —</option>${(q.opts||[]).map(o=>`<option>${o}</option>`).join("")}</select>`;
+  if(q.t==="ta") return `<textarea class="fta" rows="3" placeholder="Enter your comments…" oninput="setAns('${q.id}',this.value)"></textarea>`;
+  return `<input type="${q.t||"text"}" class="fi" placeholder="${q.ph||""}" oninput="setAns('${q.id}',this.value)"/>`;
+}
+
+function setRating(id,val){
+  answers[id]=val;
+  for(let n=1;n<=5;n++){const b=document.getElementById("rb-"+id+"-"+n);if(b)b.classList.toggle("active",n<=val);}
+  const l=document.getElementById("rl-"+id);if(l)l.textContent=RL_LABELS[val]||"";
+  updateCharts();updateTracker();
+}
+function setAns(id,val){answers[id]=val;}
+function setOvStyle(id,val){
+  OV_OPTS.forEach(o=>{const el=document.getElementById("oo-"+id+"-"+o.v);if(el)el.classList.toggle("selected",o.v===val);});
+}
+
+/* ── TRACKER UPDATE ── */
+function updateTracker(){
+  if(!currentSections) return;
+  const rqs=currentSections.flatMap(s=>s.qs).filter(q=>q.t==="r");
+  const rated=rqs.filter(q=>answers[q.id]>0);
+  const total=rqs.length;
+  const avg=rated.length?rated.reduce((s,q)=>s+answers[q.id],0)/rated.length:0;
+  const pct=total?Math.round(rated.length/total*100):0;
+  document.getElementById("tAvg").textContent=avg>0?avg.toFixed(2):"—";
+  document.getElementById("tRated").textContent=rated.length;
+  document.getElementById("tPct").textContent=pct+"%";
+  document.getElementById("tBar").style.width=pct+"%";
+}
+
+/* ── CHARTS ── */
+function initCharts(sections){
+  const ratSecs=sections.filter(s=>!s.isOverall&&s.qs.some(q=>q.t==="r"));
+  const labels=ratSecs.map(s=>s.title.split("&")[0].replace(/&/,"&").trim().substring(0,22));
+
+  const radarCtx=document.getElementById("radarChart").getContext("2d");
+  const barCtx=document.getElementById("barChart").getContext("2d");
+
+  if(radarChartInst){radarChartInst.destroy();radarChartInst=null;}
+  if(barChartInst){barChartInst.destroy();barChartInst=null;}
+
+  radarChartInst=new Chart(radarCtx,{
+    type:"radar",
+    data:{labels,datasets:[{label:"Score",data:new Array(labels.length).fill(0),
+      backgroundColor:"rgba(26,95,138,0.12)",borderColor:"rgba(26,95,138,0.75)",
+      borderWidth:2.5,pointBackgroundColor:"#1a5f8a",pointRadius:5,pointHoverRadius:7,
+      pointBorderColor:"#fff",pointBorderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{r:{min:0,max:5,ticks:{stepSize:1,display:false,backdropColor:"transparent"},
+        grid:{color:"rgba(0,0,0,.07)"},angleLines:{color:"rgba(0,0,0,.08)"},
+        pointLabels:{font:{size:10.5,family:"IBM Plex Sans"},color:"#444",padding:8}}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>" "+c.raw.toFixed(2)+" / 5.00"}}}},
+  });
+
+  const barColors=["#1a5f8a","#2278ab","#2e8fc8","#3aa0d5","#5db4e2","#7fc6ec","#a8d8f5"];
+  barChartInst=new Chart(barCtx,{
+    type:"bar",
+    data:{labels,datasets:[{label:"Score",data:new Array(labels.length).fill(0),
+      backgroundColor:ratSecs.map((_,i)=>barColors[i%barColors.length]),
+      borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{min:0,max:5,ticks:{stepSize:1,font:{size:11,family:"IBM Plex Sans"}},grid:{color:"rgba(0,0,0,.05)"},
+          title:{display:true,text:"Score (1–5)",font:{size:11},color:"#888"}},
+        y:{grid:{display:false},ticks:{font:{size:11,family:"IBM Plex Sans"},color:"#444"}}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>" Score: "+c.raw.toFixed(2)+" / 5.00"}}}},
+  });
+}
+
+function updateCharts(){
+  if(!radarChartInst||!barChartInst||!currentSections) return;
+  const ratSecs=currentSections.filter(s=>!s.isOverall&&s.qs.some(q=>q.t==="r"));
+  const scores=ratSecs.map(sec=>{
+    const rqs=sec.qs.filter(q=>q.t==="r"&&answers[q.id]);
+    if(!rqs.length) return 0;
+    return rqs.reduce((s,q)=>s+answers[q.id],0)/rqs.length;
+  });
+
+  radarChartInst.data.datasets[0].data=scores;
+  barChartInst.data.datasets[0].data=scores;
+  radarChartInst.update("none");
+  barChartInst.update("none");
+
+  // KPI cards
+  const allRated=currentSections.flatMap(s=>s.qs).filter(q=>q.t==="r"&&answers[q.id]);
+  const totalRq=currentSections.flatMap(s=>s.qs).filter(q=>q.t==="r").length;
+  const avg=allRated.length?allRated.reduce((s,q)=>s+answers[q.id],0)/allRated.length:0;
+
+  document.getElementById("kAvg").textContent=avg>0?avg.toFixed(2):"—";
+  document.getElementById("kRated").textContent=allRated.length+" / "+totalRq;
+
+  const nonZero=scores.filter(s=>s>0);
+  if(nonZero.length){
+    const mx=Math.max(...scores),mn=Math.min(...nonZero);
+    const mxi=scores.indexOf(mx),mni=scores.indexOf(mn);
+    document.getElementById("kTop").textContent=ratSecs[mxi]?ratSecs[mxi].title.split("&")[0].trim().substring(0,25):"—";
+    document.getElementById("kLow").textContent=ratSecs[mni]?ratSecs[mni].title.split("&")[0].trim().substring(0,25):"—";
+  }
+}
+
+/* ── SUBMIT REVIEW ── */
+async function submitReview(){
+  if(!document.getElementById("perfAckCheck").checked){
+    showMsg("perfErr","Please check the acknowledgment box before submitting.");return;
+  }
+  const rn=document.getElementById("revName").value.trim();
+  if(!perfEmp||!revType||!rn){showMsg("perfErr","Please complete employee selection, review type, and reviewer name.");return;}
+
+  const btn=document.getElementById("perfSaveBtn");
+  btn.disabled=true;btn.textContent="Saving…";
+
+  const rqs=currentSections?currentSections.flatMap(s=>s.qs).filter(q=>q.t==="r"&&answers[q.id]):[];
+  const avg=rqs.length?+(rqs.reduce((s,q)=>s+answers[q.id],0)/rqs.length).toFixed(2):null;
+  const yr=+document.getElementById("yrSel").value;
+  const dbType={annual:"annual",coaching:"pip",progress:"probation"}[revType];
+
+  const payload={
+    review_id:genId("REV"),employee_id_fk:perfEmp.id,
+    employee_db_id:perfEmp.employee_id,
+    employee_name:perfEmp.first_name+" "+perfEmp.last_name,
+    department:perfEmp.department,job_title:perfEmp.job_title,
+    review_type:dbType,review_year:yr,
+    period_start:yr+"-01-01",period_end:yr+"-12-31",
+    status:"submitted",reviewer_name:rn,
+    reviewer_title:document.getElementById("revTitle").value.trim(),
+    reviewer_type:"manager",ratings_json:answers,
+    average_score:avg,overall_rating:answers["ov1"]||null,
+    top_accomplishments:answers["ov2"]||null,
+    submitted_at:new Date().toISOString(),
+  };
+
+  const{error}=await db.from("performance_reviews_360").insert(payload);
+  btn.disabled=false;btn.textContent="Submit Evaluation";
+  if(error){showMsg("perfErr",error.message);return;}
+
+  document.getElementById("perfOk").style.display="inline";
+  setTimeout(()=>{
+    document.getElementById("perfOk").style.display="none";
+    perfEmp=null;revType=null;posCat=null;answers={};currentSections=null;
+    document.getElementById("perfInput").value="";
+    ["perfCard","perfTypeSection","perfReviewerSection","perfSubmitArea","scoreTracker","chartsDash"]
+      .forEach(id=>{const el=document.getElementById(id);if(el)el.style.display="none";});
+    document.getElementById("perfQs").innerHTML="";
+    document.getElementById("revName").value="";document.getElementById("revTitle").value="";
+    document.getElementById("perfAckCheck").checked=false;
+  },3000);
+}
+
+/* ── DISC HISTORY ── */
+function renderDiscHist(){
+  const el=document.getElementById("discHistContent");
+  if(!discHist.length){el.innerHTML='<div class="empty-state">No disciplinary records found for this employee.</div>';return;}
+  el.innerHTML=[...discHist].reverse().map(h=>{
+    const c=DISC_COLORS[h.type]||"#888";
+    return`<div class="dh-entry" style="border-left-color:${c};background:${c}0d">
+      <div class="dh-row">
+        <div><span class="dh-type" style="color:${c}">${DISC_ICONS[h.type]||"📄"} ${DISC_LABELS[h.type]||h.type}</span><span class="dh-reason">${h.reason||""}</span></div>
+        <div class="dh-date">${h.issued_date||h.incident_date||""}</div>
+      </div>
+      ${h.description?`<div class="dh-desc">${h.description}</div>`:""}
+      ${h.manager?`<div class="dh-mgr">Manager: ${h.manager}</div>`:""}
+    </div>`;
+  }).join("");
+}
+
+/* ── DISC TYPE SELECT ── */
+let selDiscType=null;
+function selDisc(type){
+  selDiscType=type;
+  Object.keys(DISC_LABELS).forEach(k=>{
+    const el=document.getElementById("dc-"+k);
+    const c=DISC_COLORS[k];
+    el.style.borderColor=k===type?c:"var(--border)";
+    el.style.background=k===type?c+"18":"#fafaf8";
+    el.style.transform=k===type?"scale(1.04)":"scale(1)";
+    el.style.boxShadow=k===type?`0 4px 12px ${c}40`:"none";
+  });
+  document.getElementById("discFormWrap").style.display="block";
+  const btn=document.getElementById("discSaveBtn");
+  btn.style.background=DISC_COLORS[type];
+  btn.textContent="Issue "+DISC_LABELS[type];
+  document.getElementById("dIssDate").value=todayStr();
+}
+
+function resetDiscForm(){
+  selDiscType=null;
+  document.getElementById("discFormWrap").style.display="none";
+  ["dReason","dDesc","dCorrect","dConsq","dMgr","dWit"].forEach(id=>{document.getElementById(id).value="";});
+  document.getElementById("dIncDate").value=todayStr();
+  document.getElementById("dIssDate").value=todayStr();
+  Object.keys(DISC_LABELS).forEach(k=>{
+    const el=document.getElementById("dc-"+k);
+    el.style.borderColor="var(--border)";el.style.background="#fafaf8";
+    el.style.transform="scale(1)";el.style.boxShadow="none";
+  });
+}
+
+async function submitDisc(){
+  const reason=document.getElementById("dReason").value;
+  const desc=document.getElementById("dDesc").value.trim();
+  const mgr=document.getElementById("dMgr").value.trim();
+  if(!discEmp||!selDiscType||!reason||!desc||!mgr){showMsg("discErr","Please fill in: action type, reason, description, and manager name.");return;}
+
+  const btn=document.getElementById("discSaveBtn");btn.disabled=true;btn.textContent="Saving…";
+
+  const entry={
+    id:genId("DISC"),type:selDiscType,reason,description:desc,
+    incident_date:document.getElementById("dIncDate").value,
+    issued_date:todayStr(),manager:mgr,
+    witness:document.getElementById("dWit").value.trim(),
+    corrective:document.getElementById("dCorrect").value.trim(),
+    consequence:document.getElementById("dConsq").value.trim(),
+    employee_name:discEmp.first_name+" "+discEmp.last_name,
+  };
+
+  const updated=[...discHist,entry];
+  const cf={verbal:"verbal_warning_count",written:"disciplinary_warning_count",final:"final_warning_count",termination:"termination_letter_count"}[selDiscType];
+  const upd={discipline_history:updated,last_disciplinary_action:entry,last_discipline_date:new Date().toISOString()};
+  if(cf) upd[cf]=(discEmp[cf]||0)+1;
+
+  const{error}=await db.from("employees2025").update(upd).eq("id",discEmp.id);
+  btn.disabled=false;btn.textContent="Issue "+DISC_LABELS[selDiscType];
+  if(error){showMsg("discErr",error.message);return;}
+
+  discHist=updated;
+  if(cf) discEmp[cf]=(discEmp[cf]||0)+1;
+  renderDiscHist();
+  document.getElementById("discOk").style.display="inline";
+  setTimeout(()=>{document.getElementById("discOk").style.display="none";resetDiscForm();},3000);
+}
+
+/* ── MSG ── */
+function showMsg(id,txt){
+  const el=document.getElementById(id);
+  if(txt) el.textContent="⚠️ "+txt;
+  el.style.display="inline";
+  setTimeout(()=>{el.style.display="none";},5500);
+}
+</script>
+</body>
+</html>
